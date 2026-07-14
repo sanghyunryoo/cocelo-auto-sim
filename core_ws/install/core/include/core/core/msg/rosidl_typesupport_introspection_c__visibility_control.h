@@ -1,0 +1,1 @@
+/root/auto-sim/core_ws/build/core/rosidl_typesupport_introspection_c/core/msg/rosidl_typesupport_introspection_c__visibility_control.h

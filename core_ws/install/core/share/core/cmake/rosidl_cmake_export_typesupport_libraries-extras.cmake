@@ -1,0 +1,1 @@
+/root/auto-sim/core_ws/build/core/rosidl_cmake/rosidl_cmake_export_typesupport_libraries-extras.cmake

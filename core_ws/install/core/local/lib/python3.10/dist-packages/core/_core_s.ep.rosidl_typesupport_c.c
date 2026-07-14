@@ -1,0 +1,1 @@
+/root/auto-sim/core_ws/build/core/rosidl_generator_py/core/_core_s.ep.rosidl_typesupport_c.c

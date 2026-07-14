@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 set -Eeuo pipefail
-
+export ROS_DOMAIN_ID=88
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CONDA_SH="${CONDA_SH:-/root/miniconda3/etc/profile.d/conda.sh}"
 CONDA_ENV="${CONDA_ENV:-env_isaaclab}"
@@ -9,7 +9,7 @@ ISAACLAB_ROOT="${ISAACLAB_ROOT:-/root/IsaacLab}"
 ISAAC_SIM_SETUP="${ISAAC_SIM_SETUP:-$ISAACLAB_ROOT/_isaac_sim/setup_conda_env.sh}"
 ROS_DISTRO="${ROS_DISTRO:-humble}"
 ROS_SETUP="${ROS_SETUP:-/opt/ros/$ROS_DISTRO/setup.bash}"
-ROS_WS_SETUP="${ROS_WS_SETUP:-/root/ros2_ws/install/setup.bash}"
+ROS_WS_SETUP="${ROS_WS_SETUP:-$PROJECT_ROOT/core_ws/install/setup.bash}"
 ROS_WS_ROOT="${ROS_WS_ROOT:-$(dirname "$(dirname "$ROS_WS_SETUP")")}"
 ROS_PYTHON="${ROS_PYTHON:-/usr/bin/python3}"
 AUTO_BUILD_CORE_MSGS="${AUTO_BUILD_CORE_MSGS:-1}"
@@ -61,8 +61,12 @@ build_ros_pythonpath() {
     local path
     for path in \
         /opt/ros/"$ROS_DISTRO"/local/lib/python*/dist-packages \
+        /opt/ros/"$ROS_DISTRO"/local/lib/python*/site-packages \
         /opt/ros/"$ROS_DISTRO"/lib/python*/dist-packages \
+        /opt/ros/"$ROS_DISTRO"/lib/python*/site-packages \
         "$ROS_WS_ROOT"/install/*/local/lib/python*/dist-packages \
+        "$ROS_WS_ROOT"/install/*/local/lib/python*/site-packages \
+        "$ROS_WS_ROOT"/install/*/lib/python*/dist-packages \
         "$ROS_WS_ROOT"/install/*/lib/python*/site-packages; do
         [[ -d "$path" ]] && paths+=("$path")
     done
@@ -96,62 +100,43 @@ ensure_colcon() {
     fi
 }
 
-write_core_msg_package() {
-    local pkg_dir="$ROS_WS_ROOT/src/core"
-    mkdir -p "$pkg_dir/msg"
+ensure_ros_build_python() {
+    local ros_pythonpath
+    ros_pythonpath="$(build_ros_pythonpath)"
 
-    cat > "$pkg_dir/msg/EventUser.msg" <<'EOF'
-bool estop
-bool wake
-bool sleep
-bool rough_drive_toggle
-EOF
+    if env \
+        -u PYTHONHOME \
+        PYTHONNOUSERSITE=1 \
+        PYTHONPATH="$ros_pythonpath" \
+        "$ROS_PYTHON" - <<'PY' >/dev/null 2>&1
+import em
+import numpy
+import rosidl_adapter
+PY
+    then
+        return 0
+    fi
 
-    cat > "$pkg_dir/msg/CommandUser.msg" <<'EOF'
-nav_msgs/Odometry odom
-EventUser event
-EOF
+    if [[ "$(id -u)" == "0" ]] && command -v apt-get >/dev/null 2>&1; then
+        echo "[run_play_ctrl_ros2] installing ROS 2 Python build dependencies for $ROS_PYTHON"
+        apt-get update
+        apt-get install -y python3-empy python3-numpy python3-rosidl-adapter
+    fi
 
-    cat > "$pkg_dir/CMakeLists.txt" <<'EOF'
-cmake_minimum_required(VERSION 3.8)
-project(core)
-
-find_package(ament_cmake REQUIRED)
-find_package(nav_msgs REQUIRED)
-find_package(rosidl_default_generators REQUIRED)
-
-rosidl_generate_interfaces(${PROJECT_NAME}
-  "msg/EventUser.msg"
-  "msg/CommandUser.msg"
-  DEPENDENCIES nav_msgs
-)
-
-ament_export_dependencies(rosidl_default_runtime)
-ament_package()
-EOF
-
-    cat > "$pkg_dir/package.xml" <<'EOF'
-<?xml version="1.0"?>
-<package format="3">
-  <name>core</name>
-  <version>0.0.0</version>
-  <description>Custom command user messages.</description>
-  <maintainer email="root@localhost.localdomain">root</maintainer>
-  <license>Apache-2.0</license>
-
-  <buildtool_depend>ament_cmake</buildtool_depend>
-  <build_depend>nav_msgs</build_depend>
-  <build_depend>rosidl_default_generators</build_depend>
-  <exec_depend>nav_msgs</exec_depend>
-  <exec_depend>rosidl_default_runtime</exec_depend>
-
-  <member_of_group>rosidl_interface_packages</member_of_group>
-
-  <export>
-    <build_type>ament_cmake</build_type>
-  </export>
-</package>
-EOF
+    if ! env \
+        -u PYTHONHOME \
+        PYTHONNOUSERSITE=1 \
+        PYTHONPATH="$ros_pythonpath" \
+        "$ROS_PYTHON" - <<'PY' >/dev/null 2>&1
+import em
+import numpy
+import rosidl_adapter
+PY
+    then
+        echo "[run_play_ctrl_ros2] $ROS_PYTHON cannot import em, numpy, and rosidl_adapter." >&2
+        echo "[run_play_ctrl_ros2] Install python3-empy, python3-numpy, and python3-rosidl-adapter for the ROS system Python." >&2
+        exit 1
+    fi
 }
 
 core_msg_import_ok() {
@@ -174,13 +159,35 @@ ensure_core_msgs() {
         exit 1
     fi
 
-    echo "[run_play_ctrl_ros2] preparing ROS 2 core/msg CommandUser package in $ROS_WS_ROOT"
-    write_core_msg_package
+    if [[ ! -f "$ROS_WS_ROOT/src/core/package.xml" ]]; then
+        echo "[run_play_ctrl_ros2] missing bundled ROS 2 package: $ROS_WS_ROOT/src/core/package.xml" >&2
+        exit 1
+    fi
+
+    echo "[run_play_ctrl_ros2] building bundled ROS 2 core/msg package in $ROS_WS_ROOT"
     ensure_colcon
+    ensure_ros_build_python
 
     (
         cd "$ROS_WS_ROOT"
-        colcon build --base-paths "$ROS_WS_ROOT/src" --packages-select core --symlink-install
+
+        # Keep the ROS interface build isolated from an already-active Conda
+        # environment. ROS Humble uses both the modern Python3_EXECUTABLE and
+        # the legacy PYTHON_EXECUTABLE CMake variables in different stages.
+        unset CONDA_PREFIX CONDA_DEFAULT_ENV CONDA_PYTHON_EXE VIRTUAL_ENV PYTHONHOME
+        export PATH="$(dirname "$ROS_PYTHON"):/opt/ros/$ROS_DISTRO/bin:/usr/bin:/bin"
+        export PYTHONNOUSERSITE=1
+        export PYTHONPATH="$(build_ros_pythonpath)"
+        hash -r
+
+        colcon build \
+            --base-paths "$ROS_WS_ROOT/src" \
+            --packages-select core \
+            --symlink-install \
+            --cmake-clean-cache \
+            --cmake-args \
+                "-DPython3_EXECUTABLE=$ROS_PYTHON" \
+                "-DPYTHON_EXECUTABLE=$ROS_PYTHON"
     )
 
     if [[ -f "$ROS_WS_SETUP" ]]; then

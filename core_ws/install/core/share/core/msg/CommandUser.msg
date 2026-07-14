@@ -1,0 +1,1 @@
+/root/auto-sim/core_ws/src/core/msg/CommandUser.msg

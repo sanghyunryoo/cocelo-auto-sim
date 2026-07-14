@@ -1,0 +1,1 @@
+/root/auto-sim/core_ws/build/core/ament_cmake_python/core/core.egg-info/SOURCES.txt

@@ -1,0 +1,236 @@
+[0.008s] Invoking command in '/root/auto-sim/core_ws/build/core': CMAKE_PREFIX_PATH=/opt/ros/humble CONDA_PROMPT_MODIFIER=(base) /usr/bin/cmake /root/auto-sim/core_ws/src/core -DPython3_EXECUTABLE=/usr/bin/python3 -DPYTHON_EXECUTABLE=/usr/bin/python3 -DAMENT_CMAKE_SYMLINK_INSTALL=1 -DCMAKE_INSTALL_PREFIX=/root/auto-sim/core_ws/install/core
+[0.072s] -- The C compiler identification is GNU 11.4.0
+[0.118s] -- The CXX compiler identification is GNU 11.4.0
+[0.131s] -- Detecting C compiler ABI info
+[0.187s] -- Detecting C compiler ABI info - done
+[0.203s] -- Check for working C compiler: /usr/bin/cc - skipped
+[0.203s] -- Detecting C compile features
+[0.204s] -- Detecting C compile features - done
+[0.207s] -- Detecting CXX compiler ABI info
+[0.290s] -- Detecting CXX compiler ABI info - done
+[0.294s] -- Check for working CXX compiler: /usr/bin/c++ - skipped
+[0.294s] -- Detecting CXX compile features
+[0.294s] -- Detecting CXX compile features - done
+[0.296s] -- Found ament_cmake: 1.3.14 (/opt/ros/humble/share/ament_cmake/cmake)
+[0.405s] -- Found Python3: /usr/bin/python3 (found version "3.10.12") found components: Interpreter 
+[0.437s] -- Override CMake install command with custom implementation using symlinks instead of copying resources
+[0.451s] -- Found nav_msgs: 4.9.1 (/opt/ros/humble/share/nav_msgs/cmake)
+[0.464s] -- Found rosidl_generator_c: 3.1.9 (/opt/ros/humble/share/rosidl_generator_c/cmake)
+[0.466s] -- Found rosidl_adapter: 3.1.9 (/opt/ros/humble/share/rosidl_adapter/cmake)
+[0.469s] -- Found rosidl_generator_cpp: 3.1.9 (/opt/ros/humble/share/rosidl_generator_cpp/cmake)
+[0.474s] -- Using all available rosidl_typesupport_c: rosidl_typesupport_fastrtps_c;rosidl_typesupport_introspection_c
+[0.480s] -- Using all available rosidl_typesupport_cpp: rosidl_typesupport_fastrtps_cpp;rosidl_typesupport_introspection_cpp
+[0.506s] -- Found rosidl_default_generators: 1.2.1 (/opt/ros/humble/share/rosidl_default_generators/cmake)
+[0.667s] -- Found ament_cmake_ros: 0.10.0 (/opt/ros/humble/share/ament_cmake_ros/cmake)
+[0.926s] -- Using all available rosidl_typesupport_c: rosidl_typesupport_fastrtps_c;rosidl_typesupport_introspection_c
+[1.029s] -- Using all available rosidl_typesupport_cpp: rosidl_typesupport_fastrtps_cpp;rosidl_typesupport_introspection_cpp
+[1.043s] -- Found PythonInterp: /usr/bin/python3 (found suitable version "3.10.12", minimum required is "3.6") 
+[1.045s] -- Found python_cmake_module: 0.10.0 (/opt/ros/humble/share/python_cmake_module/cmake)
+[1.072s] -- Found PythonLibs: /usr/lib/x86_64-linux-gnu/libpython3.10.so (found suitable version "3.10.12", minimum required is "3.5") 
+[1.072s] -- Using PYTHON_EXECUTABLE: /usr/bin/python3
+[1.072s] -- Using PYTHON_INCLUDE_DIRS: /usr/include/python3.10
+[1.072s] -- Using PYTHON_LIBRARIES: /usr/lib/x86_64-linux-gnu/libpython3.10.so
+[1.085s] -- Found PythonExtra: .so  
+[1.196s] -- Configuring done
+[1.216s] -- Generating done
+[1.221s] -- Build files have been written to: /root/auto-sim/core_ws/build/core
+[1.225s] Invoked command in '/root/auto-sim/core_ws/build/core' returned '0': CMAKE_PREFIX_PATH=/opt/ros/humble CONDA_PROMPT_MODIFIER=(base) /usr/bin/cmake /root/auto-sim/core_ws/src/core -DPython3_EXECUTABLE=/usr/bin/python3 -DPYTHON_EXECUTABLE=/usr/bin/python3 -DAMENT_CMAKE_SYMLINK_INSTALL=1 -DCMAKE_INSTALL_PREFIX=/root/auto-sim/core_ws/install/core
+[1.227s] Invoking command in '/root/auto-sim/core_ws/build/core': CMAKE_PREFIX_PATH=/opt/ros/humble CONDA_PROMPT_MODIFIER=(base) /usr/bin/cmake --build /root/auto-sim/core_ws/build/core -- -j14 -l14
+[1.247s] [  2%] Generating C code for ROS interfaces
+[1.251s] [  5%] Generating C++ code for ROS interfaces
+[1.251s] [  7%] Generating Rust code for ROS interfaces
+[1.255s] [  7%] Built target ament_cmake_python_symlink_core
+[1.366s] [  7%] Built target core__cpp
+[1.367s] running egg_info
+[1.367s] creating core.egg-info
+[1.367s] writing core.egg-info/PKG-INFO
+[1.367s] writing dependency_links to core.egg-info/dependency_links.txt
+[1.367s] writing top-level names to core.egg-info/top_level.txt
+[1.367s] writing manifest file 'core.egg-info/SOURCES.txt'
+[1.368s] reading manifest file 'core.egg-info/SOURCES.txt'
+[1.369s] writing manifest file 'core.egg-info/SOURCES.txt'
+[1.369s] [  7%] Built target core__rs
+[1.371s] [ 10%] Generating C++ type support for eProsima Fast-RTPS
+[1.371s] [ 12%] Generating C++ type support dispatch for ROS interfaces
+[1.372s] [ 15%] Generating C++ introspection for ROS interfaces
+[1.388s] [ 15%] Built target ament_cmake_python_build_core_egg
+[1.402s] [ 17%] Building C object CMakeFiles/core__rosidl_generator_c.dir/rosidl_generator_c/core/msg/detail/event_user__functions.c.o
+[1.403s] [ 20%] Building C object CMakeFiles/core__rosidl_generator_c.dir/rosidl_generator_c/core/msg/detail/command_user__functions.c.o
+[1.436s] [ 22%] Linking C shared library libcore__rosidl_generator_c.so
+[1.458s] [ 22%] Built target core__rosidl_generator_c
+[1.464s] [ 30%] Generating C type support dispatch for ROS interfaces
+[1.464s] [ 30%] Generating C type support for eProsima Fast-RTPS
+[1.464s] [ 30%] Generating C introspection for ROS interfaces
+[1.484s] [ 35%] Building CXX object CMakeFiles/core__rosidl_typesupport_cpp.dir/rosidl_typesupport_cpp/core/msg/event_user__type_support.cpp.o
+[1.484s] [ 35%] Building CXX object CMakeFiles/core__rosidl_typesupport_cpp.dir/rosidl_typesupport_cpp/core/msg/command_user__type_support.cpp.o
+[1.496s] [ 40%] Building CXX object CMakeFiles/core__rosidl_typesupport_fastrtps_cpp.dir/rosidl_typesupport_fastrtps_cpp/core/msg/detail/dds_fastrtps/command_user__type_support.cpp.o
+[1.496s] [ 40%] Building CXX object CMakeFiles/core__rosidl_typesupport_introspection_cpp.dir/rosidl_typesupport_introspection_cpp/core/msg/detail/event_user__type_support.cpp.o
+[1.499s] [ 42%] Building CXX object CMakeFiles/core__rosidl_typesupport_introspection_cpp.dir/rosidl_typesupport_introspection_cpp/core/msg/detail/command_user__type_support.cpp.o
+[1.500s] [ 45%] Building CXX object CMakeFiles/core__rosidl_typesupport_fastrtps_cpp.dir/rosidl_typesupport_fastrtps_cpp/core/msg/detail/dds_fastrtps/event_user__type_support.cpp.o
+[1.584s] [ 50%] Building CXX object CMakeFiles/core__rosidl_typesupport_fastrtps_c.dir/rosidl_typesupport_fastrtps_c/core/msg/detail/command_user__type_support_c.cpp.o
+[1.585s] [ 50%] Building CXX object CMakeFiles/core__rosidl_typesupport_fastrtps_c.dir/rosidl_typesupport_fastrtps_c/core/msg/detail/event_user__type_support_c.cpp.o
+[1.604s] [ 52%] Building CXX object CMakeFiles/core__rosidl_typesupport_c.dir/rosidl_typesupport_c/core/msg/event_user__type_support.cpp.o
+[1.604s] [ 55%] Building CXX object CMakeFiles/core__rosidl_typesupport_c.dir/rosidl_typesupport_c/core/msg/command_user__type_support.cpp.o
+[1.610s] [ 57%] Building C object CMakeFiles/core__rosidl_typesupport_introspection_c.dir/rosidl_typesupport_introspection_c/core/msg/detail/command_user__type_support.c.o
+[1.611s] [ 60%] Building C object CMakeFiles/core__rosidl_typesupport_introspection_c.dir/rosidl_typesupport_introspection_c/core/msg/detail/event_user__type_support.c.o
+[1.620s] [ 62%] Linking CXX shared library libcore__rosidl_typesupport_c.so
+[1.633s] [ 65%] Linking C shared library libcore__rosidl_typesupport_introspection_c.so
+[1.647s] [ 67%] Linking CXX shared library libcore__rosidl_typesupport_cpp.so
+[1.648s] [ 67%] Built target core__rosidl_typesupport_c
+[1.652s] [ 67%] Built target core__rosidl_typesupport_introspection_c
+[1.678s] [ 67%] Built target core__rosidl_typesupport_cpp
+[1.683s] [ 70%] Linking CXX shared library libcore__rosidl_typesupport_fastrtps_cpp.so
+[1.724s] [ 70%] Built target core__rosidl_typesupport_fastrtps_cpp
+[1.729s] [ 72%] Linking CXX shared library libcore__rosidl_typesupport_introspection_cpp.so
+[1.767s] [ 75%] Linking CXX shared library libcore__rosidl_typesupport_fastrtps_c.so
+[1.770s] [ 75%] Built target core__rosidl_typesupport_introspection_cpp
+[1.813s] [ 75%] Built target core__rosidl_typesupport_fastrtps_c
+[1.822s] [ 75%] Built target core
+[1.831s] [ 77%] Generating Python code for ROS interfaces
+[2.019s] [ 77%] Built target core__py
+[2.033s] [ 80%] Building C object CMakeFiles/core__rosidl_generator_py.dir/rosidl_generator_py/core/msg/_command_user_s.c.o
+[2.041s] [ 82%] Building C object CMakeFiles/core__rosidl_generator_py.dir/rosidl_generator_py/core/msg/_event_user_s.c.o
+[2.106s] [ 85%] Linking C shared library rosidl_generator_py/core/libcore__rosidl_generator_py.so
+[2.134s] [ 85%] Built target core__rosidl_generator_py
+[2.145s] [ 87%] Building C object CMakeFiles/core__rosidl_typesupport_introspection_c__pyext.dir/rosidl_generator_py/core/_core_s.ep.rosidl_typesupport_introspection_c.c.o
+[2.150s] [ 90%] Building C object CMakeFiles/core__rosidl_typesupport_fastrtps_c__pyext.dir/rosidl_generator_py/core/_core_s.ep.rosidl_typesupport_fastrtps_c.c.o
+[2.153s] [ 92%] Building C object CMakeFiles/core__rosidl_typesupport_c__pyext.dir/rosidl_generator_py/core/_core_s.ep.rosidl_typesupport_c.c.o
+[2.206s] [ 95%] Linking C shared library rosidl_generator_py/core/core_s__rosidl_typesupport_introspection_c.cpython-310-x86_64-linux-gnu.so
+[2.211s] [ 97%] Linking C shared library rosidl_generator_py/core/core_s__rosidl_typesupport_c.cpython-310-x86_64-linux-gnu.so
+[2.222s] [100%] Linking C shared library rosidl_generator_py/core/core_s__rosidl_typesupport_fastrtps_c.cpython-310-x86_64-linux-gnu.so
+[2.237s] [100%] Built target core__rosidl_typesupport_c__pyext
+[2.246s] [100%] Built target core__rosidl_typesupport_introspection_c__pyext
+[2.247s] [100%] Built target core__rosidl_typesupport_fastrtps_c__pyext
+[2.253s] Invoked command in '/root/auto-sim/core_ws/build/core' returned '0': CMAKE_PREFIX_PATH=/opt/ros/humble CONDA_PROMPT_MODIFIER=(base) /usr/bin/cmake --build /root/auto-sim/core_ws/build/core -- -j14 -l14
+[2.260s] Invoking command in '/root/auto-sim/core_ws/build/core': CMAKE_PREFIX_PATH=/opt/ros/humble CONDA_PROMPT_MODIFIER=(base) /usr/bin/cmake --install /root/auto-sim/core_ws/build/core
+[2.266s] -- Install configuration: ""
+[2.266s] -- Execute custom install script
+[2.267s] -- Symlinking: /root/auto-sim/core_ws/install/core/share/ament_index/resource_index/rosidl_interfaces/core
+[2.276s] -- Symlinking: /root/auto-sim/core_ws/install/core/include/core/core/msg/command_user.h
+[2.287s] -- Symlinking: /root/auto-sim/core_ws/install/core/include/core/core/msg/detail/command_user__functions.h
+[2.296s] -- Symlinking: /root/auto-sim/core_ws/install/core/include/core/core/msg/detail/command_user__struct.h
+[2.307s] -- Symlinking: /root/auto-sim/core_ws/install/core/include/core/core/msg/detail/command_user__type_support.h
+[2.316s] -- Symlinking: /root/auto-sim/core_ws/install/core/include/core/core/msg/detail/event_user__functions.h
+[2.326s] -- Symlinking: /root/auto-sim/core_ws/install/core/include/core/core/msg/detail/event_user__struct.h
+[2.334s] -- Symlinking: /root/auto-sim/core_ws/install/core/include/core/core/msg/detail/event_user__type_support.h
+[2.338s] -- Symlinking: /root/auto-sim/core_ws/install/core/include/core/core/msg/event_user.h
+[2.350s] -- Symlinking: /root/auto-sim/core_ws/install/core/include/core/core/msg/rosidl_generator_c__visibility_control.h
+[2.365s] -- Symlinking: /root/auto-sim/core_ws/install/core/share/core/environment/library_path.sh
+[2.379s] -- Symlinking: /root/auto-sim/core_ws/install/core/share/core/environment/library_path.dsv
+[2.391s] -- Symlinking: /root/auto-sim/core_ws/install/core/include/core/core/msg/detail/command_user__rosidl_typesupport_fastrtps_c.h
+[2.398s] -- Symlinking: /root/auto-sim/core_ws/install/core/include/core/core/msg/detail/event_user__rosidl_typesupport_fastrtps_c.h
+[2.405s] -- Symlinking: /root/auto-sim/core_ws/install/core/include/core/core/msg/rosidl_typesupport_fastrtps_c__visibility_control.h
+[2.411s] -- Symlinking: /root/auto-sim/core_ws/install/core/include/core/core/msg/command_user.hpp
+[2.421s] -- Symlinking: /root/auto-sim/core_ws/install/core/include/core/core/msg/detail/command_user__builder.hpp
+[2.435s] -- Symlinking: /root/auto-sim/core_ws/install/core/include/core/core/msg/detail/command_user__struct.hpp
+[2.443s] -- Symlinking: /root/auto-sim/core_ws/install/core/include/core/core/msg/detail/command_user__traits.hpp
+[2.448s] -- Symlinking: /root/auto-sim/core_ws/install/core/include/core/core/msg/detail/command_user__type_support.hpp
+[2.452s] -- Symlinking: /root/auto-sim/core_ws/install/core/include/core/core/msg/detail/event_user__builder.hpp
+[2.455s] -- Symlinking: /root/auto-sim/core_ws/install/core/include/core/core/msg/detail/event_user__struct.hpp
+[2.459s] -- Symlinking: /root/auto-sim/core_ws/install/core/include/core/core/msg/detail/event_user__traits.hpp
+[2.463s] -- Symlinking: /root/auto-sim/core_ws/install/core/include/core/core/msg/detail/event_user__type_support.hpp
+[2.466s] -- Symlinking: /root/auto-sim/core_ws/install/core/include/core/core/msg/event_user.hpp
+[2.469s] -- Symlinking: /root/auto-sim/core_ws/install/core/include/core/core/msg/rosidl_generator_cpp__visibility_control.hpp
+[2.472s] -- Symlinking: /root/auto-sim/core_ws/install/core/include/core/core/msg/detail/command_user__rosidl_typesupport_fastrtps_cpp.hpp
+[2.475s] -- Symlinking: /root/auto-sim/core_ws/install/core/include/core/core/msg/detail/event_user__rosidl_typesupport_fastrtps_cpp.hpp
+[2.479s] -- Symlinking: /root/auto-sim/core_ws/install/core/include/core/core/msg/rosidl_typesupport_fastrtps_cpp__visibility_control.h
+[2.483s] -- Symlinking: /root/auto-sim/core_ws/install/core/include/core/core/msg/detail/command_user__rosidl_typesupport_introspection_c.h
+[2.486s] -- Symlinking: /root/auto-sim/core_ws/install/core/include/core/core/msg/detail/event_user__rosidl_typesupport_introspection_c.h
+[2.490s] -- Symlinking: /root/auto-sim/core_ws/install/core/include/core/core/msg/rosidl_typesupport_introspection_c__visibility_control.h
+[2.493s] -- Symlinking: /root/auto-sim/core_ws/install/core/include/core/core/msg/detail/command_user__rosidl_typesupport_introspection_cpp.hpp
+[2.497s] -- Symlinking: /root/auto-sim/core_ws/install/core/include/core/core/msg/detail/event_user__rosidl_typesupport_introspection_cpp.hpp
+[2.502s] -- Symlinking: /root/auto-sim/core_ws/install/core/share/core/environment/pythonpath.sh
+[2.505s] -- Symlinking: /root/auto-sim/core_ws/install/core/share/core/environment/pythonpath.dsv
+[2.512s] -- Symlinking: /root/auto-sim/core_ws/install/core/local/lib/python3.10/dist-packages/core-0.0.0-py3.10.egg-info/PKG-INFO
+[2.516s] -- Symlinking: /root/auto-sim/core_ws/install/core/local/lib/python3.10/dist-packages/core-0.0.0-py3.10.egg-info/SOURCES.txt
+[2.521s] -- Symlinking: /root/auto-sim/core_ws/install/core/local/lib/python3.10/dist-packages/core-0.0.0-py3.10.egg-info/dependency_links.txt
+[2.526s] -- Symlinking: /root/auto-sim/core_ws/install/core/local/lib/python3.10/dist-packages/core-0.0.0-py3.10.egg-info/top_level.txt
+[2.541s] -- Symlinking: /root/auto-sim/core_ws/install/core/local/lib/python3.10/dist-packages/core/__init__.py
+[2.545s] -- Symlinking: /root/auto-sim/core_ws/install/core/local/lib/python3.10/dist-packages/core/_core_s.ep.rosidl_typesupport_c.c
+[2.550s] -- Symlinking: /root/auto-sim/core_ws/install/core/local/lib/python3.10/dist-packages/core/_core_s.ep.rosidl_typesupport_fastrtps_c.c
+[2.563s] -- Symlinking: /root/auto-sim/core_ws/install/core/local/lib/python3.10/dist-packages/core/_core_s.ep.rosidl_typesupport_introspection_c.c
+[2.570s] -- Symlinking: /root/auto-sim/core_ws/install/core/local/lib/python3.10/dist-packages/core/core_s__rosidl_typesupport_c.cpython-310-x86_64-linux-gnu.so
+[2.577s] -- Symlinking: /root/auto-sim/core_ws/install/core/local/lib/python3.10/dist-packages/core/core_s__rosidl_typesupport_fastrtps_c.cpython-310-x86_64-linux-gnu.so
+[2.589s] -- Symlinking: /root/auto-sim/core_ws/install/core/local/lib/python3.10/dist-packages/core/core_s__rosidl_typesupport_introspection_c.cpython-310-x86_64-linux-gnu.so
+[2.603s] -- Symlinking: /root/auto-sim/core_ws/install/core/local/lib/python3.10/dist-packages/core/libcore__rosidl_generator_py.so
+[2.616s] -- Symlinking: /root/auto-sim/core_ws/install/core/local/lib/python3.10/dist-packages/core/msg/__init__.py
+[2.629s] -- Symlinking: /root/auto-sim/core_ws/install/core/local/lib/python3.10/dist-packages/core/msg/_command_user.py
+[2.640s] -- Symlinking: /root/auto-sim/core_ws/install/core/local/lib/python3.10/dist-packages/core/msg/_command_user_s.c
+[2.653s] -- Symlinking: /root/auto-sim/core_ws/install/core/local/lib/python3.10/dist-packages/core/msg/_event_user.py
+[2.665s] -- Symlinking: /root/auto-sim/core_ws/install/core/local/lib/python3.10/dist-packages/core/msg/_event_user_s.c
+[2.677s] -- Up-to-date symlink: /root/auto-sim/core_ws/install/core/local/lib/python3.10/dist-packages/core/core_s__rosidl_typesupport_fastrtps_c.cpython-310-x86_64-linux-gnu.so
+[2.677s] -- Up-to-date symlink: /root/auto-sim/core_ws/install/core/local/lib/python3.10/dist-packages/core/core_s__rosidl_typesupport_introspection_c.cpython-310-x86_64-linux-gnu.so
+[2.677s] -- Up-to-date symlink: /root/auto-sim/core_ws/install/core/local/lib/python3.10/dist-packages/core/core_s__rosidl_typesupport_c.cpython-310-x86_64-linux-gnu.so
+[2.677s] -- Symlinking: /root/auto-sim/core_ws/install/core/share/ament_index/resource_index/rust_packages/core
+[2.689s] -- Symlinking: /root/auto-sim/core_ws/install/core/share/core/rust/Cargo.toml
+[2.698s] -- Symlinking: /root/auto-sim/core_ws/install/core/share/core/rust/build.rs
+[2.701s] -- Symlinking: /root/auto-sim/core_ws/install/core/share/core/rust/src/lib.rs
+[2.713s] -- Symlinking: /root/auto-sim/core_ws/install/core/share/core/rust/src/msg.rs
+[2.716s] -- Symlinking: /root/auto-sim/core_ws/install/core/share/core/rust/src/msg/rmw.rs
+[2.730s] -- Symlinking: /root/auto-sim/core_ws/install/core/share/core/msg/EventUser.idl
+[2.734s] -- Symlinking: /root/auto-sim/core_ws/install/core/share/core/msg/CommandUser.idl
+[2.738s] -- Symlinking: /root/auto-sim/core_ws/install/core/share/core/msg/EventUser.msg
+[2.752s] -- Symlinking: /root/auto-sim/core_ws/install/core/share/core/msg/CommandUser.msg
+[2.756s] -- Symlinking: /root/auto-sim/core_ws/install/core/share/ament_index/resource_index/package_run_dependencies/core
+[2.771s] -- Symlinking: /root/auto-sim/core_ws/install/core/share/ament_index/resource_index/parent_prefix_path/core
+[2.784s] -- Symlinking: /root/auto-sim/core_ws/install/core/share/core/environment/ament_prefix_path.sh
+[2.788s] -- Symlinking: /root/auto-sim/core_ws/install/core/share/core/environment/ament_prefix_path.dsv
+[2.795s] -- Symlinking: /root/auto-sim/core_ws/install/core/share/core/environment/path.sh
+[2.799s] -- Symlinking: /root/auto-sim/core_ws/install/core/share/core/environment/path.dsv
+[2.805s] -- Symlinking: /root/auto-sim/core_ws/install/core/share/core/local_setup.bash
+[2.809s] -- Symlinking: /root/auto-sim/core_ws/install/core/share/core/local_setup.sh
+[2.816s] -- Symlinking: /root/auto-sim/core_ws/install/core/share/core/local_setup.zsh
+[2.820s] -- Symlinking: /root/auto-sim/core_ws/install/core/share/core/local_setup.dsv
+[2.832s] -- Symlinking: /root/auto-sim/core_ws/install/core/share/core/package.dsv
+[2.845s] -- Symlinking: /root/auto-sim/core_ws/install/core/share/ament_index/resource_index/packages/core
+[2.850s] -- Symlinking: /root/auto-sim/core_ws/install/core/share/core/cmake/rosidl_cmake-extras.cmake
+[2.863s] -- Symlinking: /root/auto-sim/core_ws/install/core/share/core/cmake/ament_cmake_export_dependencies-extras.cmake
+[2.867s] -- Symlinking: /root/auto-sim/core_ws/install/core/share/core/cmake/ament_cmake_export_include_directories-extras.cmake
+[2.871s] -- Symlinking: /root/auto-sim/core_ws/install/core/share/core/cmake/ament_cmake_export_libraries-extras.cmake
+[2.875s] -- Symlinking: /root/auto-sim/core_ws/install/core/share/core/cmake/ament_cmake_export_targets-extras.cmake
+[2.879s] -- Symlinking: /root/auto-sim/core_ws/install/core/share/core/cmake/rosidl_cmake_export_typesupport_targets-extras.cmake
+[2.892s] -- Symlinking: /root/auto-sim/core_ws/install/core/share/core/cmake/rosidl_cmake_export_typesupport_libraries-extras.cmake
+[2.904s] -- Symlinking: /root/auto-sim/core_ws/install/core/share/core/cmake/rosidl_cmake_aggregate_target-extras.cmake
+[2.908s] -- Symlinking: /root/auto-sim/core_ws/install/core/share/core/cmake/coreConfig.cmake
+[2.918s] -- Symlinking: /root/auto-sim/core_ws/install/core/share/core/cmake/coreConfig-version.cmake
+[2.927s] -- Symlinking: /root/auto-sim/core_ws/install/core/share/core/package.xml
+[2.934s] -- Installing: /root/auto-sim/core_ws/install/core/lib/libcore__rosidl_generator_c.so
+[2.935s] -- Set runtime path of "/root/auto-sim/core_ws/install/core/lib/libcore__rosidl_generator_c.so" to ""
+[2.935s] -- Installing: /root/auto-sim/core_ws/install/core/lib/libcore__rosidl_typesupport_fastrtps_c.so
+[2.935s] -- Set runtime path of "/root/auto-sim/core_ws/install/core/lib/libcore__rosidl_typesupport_fastrtps_c.so" to ""
+[2.935s] -- Installing: /root/auto-sim/core_ws/install/core/lib/libcore__rosidl_typesupport_fastrtps_cpp.so
+[2.936s] -- Set runtime path of "/root/auto-sim/core_ws/install/core/lib/libcore__rosidl_typesupport_fastrtps_cpp.so" to ""
+[2.936s] -- Installing: /root/auto-sim/core_ws/install/core/lib/libcore__rosidl_typesupport_introspection_c.so
+[2.936s] -- Set runtime path of "/root/auto-sim/core_ws/install/core/lib/libcore__rosidl_typesupport_introspection_c.so" to ""
+[2.936s] -- Installing: /root/auto-sim/core_ws/install/core/lib/libcore__rosidl_typesupport_c.so
+[2.937s] -- Set runtime path of "/root/auto-sim/core_ws/install/core/lib/libcore__rosidl_typesupport_c.so" to ""
+[2.937s] -- Installing: /root/auto-sim/core_ws/install/core/lib/libcore__rosidl_typesupport_introspection_cpp.so
+[2.937s] -- Set runtime path of "/root/auto-sim/core_ws/install/core/lib/libcore__rosidl_typesupport_introspection_cpp.so" to ""
+[2.937s] -- Installing: /root/auto-sim/core_ws/install/core/lib/libcore__rosidl_typesupport_cpp.so
+[2.937s] -- Set runtime path of "/root/auto-sim/core_ws/install/core/lib/libcore__rosidl_typesupport_cpp.so" to ""
+[2.963s] Listing '/root/auto-sim/core_ws/install/core/local/lib/python3.10/dist-packages/core'...
+[2.963s] Compiling '/root/auto-sim/core_ws/install/core/local/lib/python3.10/dist-packages/core/__init__.py'...
+[2.963s] Listing '/root/auto-sim/core_ws/install/core/local/lib/python3.10/dist-packages/core/msg'...
+[2.963s] Compiling '/root/auto-sim/core_ws/install/core/local/lib/python3.10/dist-packages/core/msg/__init__.py'...
+[2.963s] Compiling '/root/auto-sim/core_ws/install/core/local/lib/python3.10/dist-packages/core/msg/_command_user.py'...
+[2.963s] Compiling '/root/auto-sim/core_ws/install/core/local/lib/python3.10/dist-packages/core/msg/_event_user.py'...
+[2.965s] -- Installing: /root/auto-sim/core_ws/install/core/lib/libcore__rosidl_generator_py.so
+[2.965s] -- Set runtime path of "/root/auto-sim/core_ws/install/core/lib/libcore__rosidl_generator_py.so" to ""
+[2.965s] -- Installing: /root/auto-sim/core_ws/install/core/share/core/cmake/export_core__rosidl_generator_cExport.cmake
+[2.965s] -- Installing: /root/auto-sim/core_ws/install/core/share/core/cmake/export_core__rosidl_generator_cExport-noconfig.cmake
+[2.965s] -- Installing: /root/auto-sim/core_ws/install/core/share/core/cmake/export_core__rosidl_typesupport_fastrtps_cExport.cmake
+[2.966s] -- Installing: /root/auto-sim/core_ws/install/core/share/core/cmake/export_core__rosidl_typesupport_fastrtps_cExport-noconfig.cmake
+[2.966s] -- Installing: /root/auto-sim/core_ws/install/core/share/core/cmake/export_core__rosidl_generator_cppExport.cmake
+[2.966s] -- Installing: /root/auto-sim/core_ws/install/core/share/core/cmake/export_core__rosidl_typesupport_fastrtps_cppExport.cmake
+[2.966s] -- Installing: /root/auto-sim/core_ws/install/core/share/core/cmake/export_core__rosidl_typesupport_fastrtps_cppExport-noconfig.cmake
+[2.966s] -- Installing: /root/auto-sim/core_ws/install/core/share/core/cmake/core__rosidl_typesupport_introspection_cExport.cmake
+[2.966s] -- Installing: /root/auto-sim/core_ws/install/core/share/core/cmake/core__rosidl_typesupport_introspection_cExport-noconfig.cmake
+[2.966s] -- Installing: /root/auto-sim/core_ws/install/core/share/core/cmake/core__rosidl_typesupport_cExport.cmake
+[2.966s] -- Installing: /root/auto-sim/core_ws/install/core/share/core/cmake/core__rosidl_typesupport_cExport-noconfig.cmake
+[2.966s] -- Installing: /root/auto-sim/core_ws/install/core/share/core/cmake/core__rosidl_typesupport_introspection_cppExport.cmake
+[2.966s] -- Installing: /root/auto-sim/core_ws/install/core/share/core/cmake/core__rosidl_typesupport_introspection_cppExport-noconfig.cmake
+[2.966s] -- Installing: /root/auto-sim/core_ws/install/core/share/core/cmake/core__rosidl_typesupport_cppExport.cmake
+[2.966s] -- Installing: /root/auto-sim/core_ws/install/core/share/core/cmake/core__rosidl_typesupport_cppExport-noconfig.cmake
+[2.966s] -- Installing: /root/auto-sim/core_ws/install/core/share/core/cmake/export_core__rosidl_generator_pyExport.cmake
+[2.966s] -- Installing: /root/auto-sim/core_ws/install/core/share/core/cmake/export_core__rosidl_generator_pyExport-noconfig.cmake
+[2.968s] Invoked command in '/root/auto-sim/core_ws/build/core' returned '0': CMAKE_PREFIX_PATH=/opt/ros/humble CONDA_PROMPT_MODIFIER=(base) /usr/bin/cmake --install /root/auto-sim/core_ws/build/core

@@ -1,0 +1,1 @@
+/root/auto-sim/core_ws/build/core/rosidl_typesupport_introspection_cpp/core/msg/detail/command_user__rosidl_typesupport_introspection_cpp.hpp

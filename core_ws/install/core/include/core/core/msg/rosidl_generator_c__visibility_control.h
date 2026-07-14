@@ -1,0 +1,1 @@
+/root/auto-sim/core_ws/build/core/rosidl_generator_c/core/msg/rosidl_generator_c__visibility_control.h

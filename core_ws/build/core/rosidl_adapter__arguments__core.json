@@ -1,0 +1,7 @@
+{
+  "package_name": "core",
+  "non_idl_tuples": [
+    "/root/auto-sim/core_ws/src/core:msg/EventUser.msg",
+    "/root/auto-sim/core_ws/src/core:msg/CommandUser.msg"
+  ]
+}

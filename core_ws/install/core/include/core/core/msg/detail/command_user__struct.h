@@ -1,0 +1,1 @@
+/root/auto-sim/core_ws/build/core/rosidl_generator_c/core/msg/detail/command_user__struct.h

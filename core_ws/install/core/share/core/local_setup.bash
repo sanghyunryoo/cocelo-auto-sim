@@ -1,0 +1,1 @@
+/root/auto-sim/core_ws/build/core/ament_cmake_environment_hooks/local_setup.bash

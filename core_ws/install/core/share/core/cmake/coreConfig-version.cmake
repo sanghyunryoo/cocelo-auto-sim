@@ -1,0 +1,1 @@
+/root/auto-sim/core_ws/build/core/ament_cmake_core/coreConfig-version.cmake
