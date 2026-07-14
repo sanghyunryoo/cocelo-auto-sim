@@ -137,7 +137,7 @@ GUI에서 실행하면 전역 키보드 입력을 사용해 로봇을 조종합�
 
 ## 설치
 
-이 저장소는 Ubuntu + Isaac Sim 4.5 + Isaac Lab 2.0.0 + ROS 2 Humble 환경을 기준으로 구성되어 있습니다.
+이 저장소는 Ubuntu + Isaac Sim 4.5 + Isaac Lab 2.3.0 + ROS 2 Humble 환경을 기준으로 구성되어 있습니다.
 
 ### 1. Isaac Sim 설치
 
@@ -214,37 +214,6 @@ Performance report 주기를 바꾸려면 추가 인자를 전달합니다.
 
 ```bash
 ./run_play_ctrl_ros2.sh --headless --perf_report_interval 1
-```
-
-## 학습/재생 스크립트
-
-기존 CO-RL 학습과 재생 스크립트도 사용할 수 있습니다.
-
-### Train
-
-```bash
-python scripts/co_rl/train.py \
-  --task Isaac-Velocity-Flat-Flamingo-Light-v1-ppo \
-  --algo ppo \
-  --num_envs 4096 \
-  --headless \
-  --num_policy_stacks 2 \
-  --num_critic_stacks 2
-```
-
-### Play
-
-```bash
-python scripts/co_rl/play_ctrl.py \
-  --task Isaac-Velocity-Flat-Flamingo-Light-Play-v1-ppo \
-  --algo ppo \
-  --num_envs 1 \
-  --headless \
-  --teleop True \
-  --policy_onnx_path weights/example_policy.onnx \
-  --num_policy_stacks 2 \
-  --num_critic_stacks 2 \
-  --plot False
 ```
 
 ## 문제 해결
