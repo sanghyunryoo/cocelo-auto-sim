@@ -1,99 +1,262 @@
-# Isaac LAB for Flamingo
+# Flamingo ROS 2 Auto-Sim
 
 [![IsaacSim](https://img.shields.io/badge/IsaacSim-4.5-silver.svg)](https://docs.omniverse.nvidia.com/isaacsim/latest/overview.html)
-[![IsaacLab](https://img.shields.io/badge/Lab-2.0.0-silver)](https://isaac-orbit.github.io/orbit/)
+[![IsaacLab](https://img.shields.io/badge/IsaacLab-2.0.0-silver)](https://isaac-sim.github.io/IsaacLab/)
 [![Python](https://img.shields.io/badge/python-3.10-blue.svg)](https://docs.python.org/3/whatsnew/3.10.html)
-[![Linux platform](https://img.shields.io/badge/platform-linux--64-orange.svg)](https://releases.ubuntu.com/20.04/)
-[![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)](https://pre-commit.com/)
+[![ROS 2](https://img.shields.io/badge/ROS%202-Humble-blue)](https://docs.ros.org/en/humble/)
+[![Linux](https://img.shields.io/badge/platform-linux--64-orange.svg)](https://releases.ubuntu.com/)
 [![License](https://img.shields.io/badge/license-MIT-yellow.svg)](https://opensource.org/license/mit)
 
-## **✨ New Features - Updated 🚀**
-✔️ **Flamingo rev.0.1.4**: Latest version of Flamingo added.  
-✔️ **Flamingo Edu v1**: Flamingo Edu version added.  
-✔️ **Stack Environment**: Observations can be stacked with arguments.  
-✔️ **Constraint Manager**: [Constraints as Termination (CaT)](https://arxiv.org/abs/2403.18765) method implementation added.  
-✔️ **CoRL**: Based on [rsl_rl](https://github.com/leggedrobotics/rsl_rl) library, off-policy algorithms are implemented on `off_policy_runner`.  
+Flamingo ROS 2 Auto-Sim은 Isaac Lab 기반 Flamingo 로봇 시뮬레이션을 실행하고, RViz2로 ROS 2 센서/TF 데이터를 확인하며, ONNX 정책과 키보드 명령으로 로봇을 제어하기 위한 통합 실행 환경입니다.
 
-## Sim2Real - ZeroShot Transfer
-<table>
-    <td><img src="https://github.com/user-attachments/assets/bb14612c-85c2-43ce-a7df-8b09ee4d3f69" width="800" height="400"/></td>
-</table>
-<table>
-  <tr>
-    <td><img src="https://github.com/user-attachments/assets/8f9f990d-e8e9-400a-82b2-1131ff73f891" width="385" height="170"/></td>
-    <td><img src="https://github.com/user-attachments/assets/93c6b187-4680-435e-800a-9e6d3d570d13" width="385" height="170"/></td>
-  </tr>
-  <tr>
-    <td><img src="https://github.com/user-attachments/assets/9991ff73-5b3e-4d10-9b63-548197f18e54" width="385" height="170"/></td>
-    <td><img src="https://github.com/user-attachments/assets/545fd258-1add-499a-8c62-520e113a951b" width="385" height="170"/></td>
-  </tr>
-</table>
+## 한눈에 보기
 
+### Control Center GUI
 
-## Isaac Lab Flamingo
-<table>
-  <tr>
-    <td><img src="https://github.com/user-attachments/assets/0037889b-bab7-4686-a9a5-46ea9bbe6ac2" width="385" height="240"/></td>
-    <td><img src="https://github.com/user-attachments/assets/16d8d025-7e57-479a-80d4-9cfef2cf9b6b" width="385" height="240"/></td>
-  </tr>
-</table>
+`launch.sh`를 실행하면 아래와 같은 Control Center가 열립니다. 이 화면에서 Isaac 실행 모드, RViz2, 카메라/IMU/LiDAR, ONNX 정책, 제어 파라미터를 한 번에 설정할 수 있습니다.
 
-## Sim 2 Sim framework - Lab to MuJoCo
-<table>
-  <tr>
-    <td><img src="https://github.com/user-attachments/assets/edcc4077-e082-4fce-90a6-b10c94869aad" width="385" height="240"/></td>
-    <td><img src="https://github.com/user-attachments/assets/df58b2db-00c6-4228-a953-eb605dee2797" width="385" height="240"/></td>
-  </tr>
-</table>
+![Flamingo ROS 2 Control Center](resource/gui.png)
 
-- Simulation to Simulation framework is available on sim2sim_onnx branch (Currently on migration update)
-- You can simply inference trained policy (basically export as .onnx from isaac lab)
+### 실행 예시
 
-## Setup
-- This repo is tested on Ubuntu 20.04, and I recommend you to install 'local install'
-### 1. Install Isaac Sim
-  ```
-  https://isaac-sim.github.io/IsaacLab/main/source/setup/installation/binaries_installation.html
-  ```
-### 2. Install Isaac Lab
-  ```
-  https://github.com/isaac-sim/IsaacLab
-  ```
+왼쪽은 Isaac Sim에서 구동 중인 Flamingo 로봇, 오른쪽은 RViz2에서 확인하는 TF, 경로, LiDAR point cloud, 카메라 토픽 예시입니다.
 
-### 3. Install lab.flamingo package
-i. clone repository
-   ```
-   git clone https://github.com/jaykorea/Isaac-RL-Two-wheel-Legged-Bot
-   ```
-ii. install lab.flamingo pip package by running below command
-   - run it on 'lab.flamingo' root path
-   ```
-   conda activate env_isaaclab # change to you conda env
-   pip install -e .
-   ```
-iii. Unzip assets(usd asset) on folder
-   - Since git does not correctly upload '.usd' file, you should manually unzip the usd files on assests folder
-   ```
-    path example: lab/flamingo/assets/data/Robots/Flamingo/flamingo_rev01_4_1/
-   ```
+![Isaac Sim and RViz2 example](resource/example.png)
 
-## Launch script
-### Train flamingo
-  - run it on 'lab.flamingo' root path
-  ```
-    python scripts/co_rl/train.py --task {task name} --algo ppo --num_envs 4096 --headless --num_policy_stacks {stack number on policy obs} --num_critic_stacks {stack number on critic obs}
-  ```
-### Train example - track velocity
-  ```
-    python scripts/co_rl/train.py --task Isaac-Velocity-Flat-Flamingo-v1-ppo --algo ppo --num_envs 4096 --headless --num_policy_stacks 2 --num_critic_stacks 2
-  ```
-### play flamingo
-  - run it on 'lab.flamingo' root path
-  ```
-    python scripts/co_rl/play.py --task {task name} --algo ppo --num_envs 64 --num_policy_stacks {stack number on policy obs} --num_critic_stacks {stack number on critic obs} --load_run {folder name} --plot False
-  ```
-### play example - track velocity
-  ```
-    python scripts/co_rl/play.py --task Isaac-Velocity-Flat-Flamingo-Play-v1-ppo --algo ppo --num_envs 64 --num_policy_stacks {stack number on policy obs} --num_critic_stacks {stack number on critic obs} --load_run 2025-03-16_17-09-35 --plot False
-  ```
-# cocelo-auto-sim
+## 빠른 실행
+
+```bash
+./launch.sh
+```
+
+GUI 없이 바로 실행하려면 다음 스크립트를 사용할 수 있습니다.
+
+```bash
+./run_play_ctrl_ros2.sh --headless
+```
+
+기본 실행은 다음을 함께 시작합니다.
+
+| 구성 요소 | 역할 |
+| --- | --- |
+| Isaac Lab / Isaac Sim | Flamingo 로봇과 환경 시뮬레이션 |
+| ROS 2 bridge | joint states, TF, camera, IMU, LiDAR, path, command topic 발행 |
+| robot_state_publisher | URDF 기반 RobotModel/TF 시각화 지원 |
+| RViz2 | ROS 2 토픽과 로봇 상태 시각화 |
+| ONNX policy runtime | `weights/example_policy.onnx` 기반 정책 추론 |
+
+## GUI 사용법
+
+### 1. 상단 상태 바
+
+| 항목 | 설명 |
+| --- | --- |
+| `RUN` | 현재 GUI 설정을 환경 변수와 CLI 인자로 변환해 `run_play_ctrl_ros2.sh`를 실행합니다. |
+| `STOP` | 실행 중인 Isaac/ROS/RViz2 프로세스 그룹을 종료합니다. |
+| 상태 표시 | `Idle`, `Running PID ...`, `Stopped` 등 현재 실행 상태를 보여줍니다. |
+
+### 2. Operation Mode
+
+| 옵션 | 기본값 | 설명 |
+| --- | --- | --- |
+| `HEADLESS` | ON | Isaac Sim viewport를 끄고 백그라운드 성능 중심으로 실행합니다. RViz2는 별도로 켤 수 있습니다. |
+| `RVIZ2` | ON | `rviz/flamingo_ros2.rviz` 설정으로 RViz2를 실행합니다. ROS 토픽, TF, RobotModel, LiDAR, 카메라를 확인할 때 사용합니다. |
+
+### 3. Sensor Loadout
+
+필요한 센서만 켜서 시뮬레이션 부하를 조절할 수 있습니다.
+
+| 옵션 | 기본값 | ROS 2 출력 |
+| --- | --- | --- |
+| `FRONT RGBD` | ON | `/f4/front_camera/rgb/image_raw`, `/f4/front_camera/depth/image_rect_raw`, camera info |
+| `ADAS RGBD` | ON | `/f4/adas_camera/rgb/image_raw`, `/f4/adas_camera/depth/image_rect_raw`, camera info |
+| `BASE IMU` | ON | `/f4/imu` |
+| `LIDAR CLOUD` | ON | `/f4/lidar/points` |
+| `LIDAR IMU` | ON | `/f4/lidar/imu` |
+| `HEIGHT MAP` | OFF | `/f4/height_map/points` |
+
+### 4. Telemetry Parameters
+
+센서 발행 주기와 이미지 크기, 경로 토픽, 정책 파일을 설정합니다. 값은 `RUN`을 누르는 시점에 적용됩니다.
+
+| 항목 | 기본값 | 설명 |
+| --- | --- | --- |
+| `Camera rate` | `30 Hz` | Front/ADAS RGBD 카메라 publish rate |
+| `Image width` | `320 px` | 카메라 이미지 너비 |
+| `Image height` | `240 px` | 카메라 이미지 높이 |
+| `IMU rate` | `100 Hz` | Base IMU와 LiDAR IMU publish rate |
+| `Lidar rate` | `5 Hz` | LiDAR point cloud publish rate |
+| `Perf report` | `2 sec` | 콘솔에 real-time factor와 publish rate를 출력하는 주기 |
+| `Path topic` | `/path_gt` | ground-truth robot path 발행 토픽 |
+| `Policy ONNX` | `weights/example_policy.onnx` | 추론에 사용할 ONNX 정책 파일 |
+
+### 5. Policy Runtime
+
+정책 출력과 관측값 스케일을 실행 전에 조정합니다. 각 `Configure` 버튼을 누르면 세부 값을 편집할 수 있습니다.
+
+| 설정 | 주요 항목 | 설명 |
+| --- | --- | --- |
+| `Hardware Settings` | Shoulder/Wheel `Kp`, `Kd` | 어깨 관절과 휠 제어기의 PD gain |
+| `Observation Settings` | joint pos/vel, base angular velocity, projected gravity, command velocity scale | policy observation에 들어가는 값의 스케일 |
+| `Action Settings` | shoulder action, wheel action | policy action을 실제 shoulder position, wheel velocity 명령으로 변환하는 스케일 |
+
+### 6. Operator Input
+
+GUI에서 실행하면 전역 키보드 입력을 사용해 로봇을 조종합니다.
+
+| 키 | 동작 |
+| --- | --- |
+| `W` / `Up` | 전진 |
+| `S` / `Down` | 후진 |
+| `A` / `Left` | 좌회전 |
+| `D` / `Right` | 우회전 |
+| `Space` | 명령 초기화/정지 |
+
+터미널 headless 실행에서는 필요에 따라 `/dev/tty` 기반 stdin teleop fallback을 사용합니다.
+
+### 7. Runtime Console
+
+오른쪽 콘솔에는 실행 명령, 적용된 환경 변수, Isaac/ROS 2 로그, 센서 발행 상태, performance report가 출력됩니다. `Clear` 버튼으로 로그 화면만 비울 수 있으며, 프로세스 실행 상태에는 영향을 주지 않습니다.
+
+## ROS 2 토픽 요약
+
+| 토픽 | 메시지/역할 |
+| --- | --- |
+| `/f4/joint_states` | RViz2 RobotModel과 TF 계산에 사용되는 joint state |
+| `/path_gt` | `world` 기준 ground-truth 경로 |
+| `/f4/front_camera/rgb/image_raw` | Front RGB 이미지 |
+| `/f4/front_camera/depth/image_rect_raw` | Front depth 이미지 |
+| `/f4/adas_camera/rgb/image_raw` | ADAS RGB 이미지 |
+| `/f4/adas_camera/depth/image_rect_raw` | ADAS depth 이미지 |
+| `/f4/imu` | Base IMU |
+| `/f4/lidar/points` | LiDAR PointCloud2 |
+| `/f4/lidar/imu` | LiDAR IMU |
+| `/control_command/user_odom` | `core/msg/CommandUser` 기반 사용자 명령 |
+
+기본 TF 구조는 `world -> f4/base_link`이며, URDF 링크에는 `f4/` prefix가 붙습니다.
+
+## 설치
+
+이 저장소는 Ubuntu + Isaac Sim 4.5 + Isaac Lab 2.0.0 + ROS 2 Humble 환경을 기준으로 구성되어 있습니다.
+
+### 1. Isaac Sim 설치
+
+Isaac Lab 공식 문서의 binary/local installation 절차를 따릅니다.
+
+```text
+https://isaac-sim.github.io/IsaacLab/main/source/setup/installation/binaries_installation.html
+```
+
+### 2. Isaac Lab 설치
+
+```text
+https://github.com/isaac-sim/IsaacLab
+```
+
+기본 스크립트는 다음 경로를 가정합니다. 다른 위치를 사용한다면 환경 변수로 덮어쓸 수 있습니다.
+
+```bash
+export ISAACLAB_ROOT=/root/IsaacLab
+export CONDA_SH=/root/miniconda3/etc/profile.d/conda.sh
+export CONDA_ENV=env_isaaclab
+```
+
+### 3. 패키지 설치
+
+저장소 루트에서 editable install을 수행합니다.
+
+```bash
+conda activate env_isaaclab
+pip install -e .
+```
+
+### 4. ROS 2 환경
+
+기본값은 ROS 2 Humble입니다.
+
+```bash
+export ROS_DISTRO=humble
+export ROS_SETUP=/opt/ros/humble/setup.bash
+export ROS_WS_SETUP=/root/ros2_ws/install/setup.bash
+```
+
+`run_play_ctrl_ros2.sh`는 `core/msg/CommandUser`, `core/msg/EventUser` 메시지 패키지가 없으면 `/root/ros2_ws/src/core`에 자동 생성하고 `colcon build`를 시도합니다.
+
+## 스크립트 구조
+
+| 파일/폴더 | 설명 |
+| --- | --- |
+| `launch.sh` | Tkinter 기반 Flamingo ROS 2 Control Center GUI |
+| `run_play_ctrl_ros2.sh` | Conda/Isaac/ROS 환경 설정, RViz2/robot_state_publisher 실행, `play_ctrl.py` 호출 |
+| `scripts/co_rl/play_ctrl.py` | Isaac Lab 환경 실행, ONNX policy inference, teleop, ROS 2 sensor publisher 생성 |
+| `scripts/co_rl/ros2.py` | ROS 2 camera, IMU, LiDAR, TF, path, command bridge 구현 |
+| `rviz/flamingo_ros2.rviz` | RViz2 기본 시각화 설정 |
+| `urdf/` | RViz2 RobotModel용 URDF와 mesh |
+| `weights/example_policy.onnx` | 기본 예제 정책 |
+| `resource/gui.png` | README용 GUI 스크린샷 |
+| `resource/example.png` | README용 Isaac/RViz2 실행 예시 |
+
+## CLI 실행 예시
+
+GUI에서 설정하는 값은 대부분 환경 변수로도 제어할 수 있습니다.
+
+```bash
+RUN_RVIZ2=1 \
+ENABLE_ROS2_FRONT_CAMERA=1 \
+ENABLE_ROS2_ADAS_CAMERA=1 \
+ENABLE_ROS2_IMU=1 \
+ENABLE_ROS2_LIDAR=1 \
+POLICY_ONNX_PATH="$PWD/weights/example_policy.onnx" \
+./run_play_ctrl_ros2.sh --headless
+```
+
+Performance report 주기를 바꾸려면 추가 인자를 전달합니다.
+
+```bash
+./run_play_ctrl_ros2.sh --headless --perf_report_interval 1
+```
+
+## 학습/재생 스크립트
+
+기존 CO-RL 학습과 재생 스크립트도 사용할 수 있습니다.
+
+### Train
+
+```bash
+python scripts/co_rl/train.py \
+  --task Isaac-Velocity-Flat-Flamingo-Light-v1-ppo \
+  --algo ppo \
+  --num_envs 4096 \
+  --headless \
+  --num_policy_stacks 2 \
+  --num_critic_stacks 2
+```
+
+### Play
+
+```bash
+python scripts/co_rl/play_ctrl.py \
+  --task Isaac-Velocity-Flat-Flamingo-Light-Play-v1-ppo \
+  --algo ppo \
+  --num_envs 1 \
+  --headless \
+  --teleop True \
+  --policy_onnx_path weights/example_policy.onnx \
+  --num_policy_stacks 2 \
+  --num_critic_stacks 2 \
+  --plot False
+```
+
+## 문제 해결
+
+| 증상 | 확인할 것 |
+| --- | --- |
+| `tkinter is not available` | GUI 대신 `run_play_ctrl_ros2.sh --headless`로 fallback됩니다. GUI가 필요하면 OS Python tkinter 패키지를 설치하세요. |
+| RViz2가 뜨지 않음 | `RUN_RVIZ2=1`, `rviz2` 명령 설치 여부, `rviz/flamingo_ros2.rviz` 경로를 확인하세요. |
+| ONNX 파일 오류 | GUI의 `Policy ONNX` 경로나 `POLICY_ONNX_PATH`가 실제 `.onnx` 파일을 가리키는지 확인하세요. |
+| ROS 메시지 import 실패 | `ROS_WS_SETUP`, `ROS_PYTHON`, `colcon` 설치 여부를 확인하세요. 스크립트는 기본적으로 `core` 메시지를 자동 빌드합니다. |
+| 센서가 너무 느림 | Camera resolution/rate, LiDAR rate, HEIGHT MAP 옵션을 낮추거나 끄세요. |
+
+## License
+
+MIT License. 자세한 내용은 [LICENCE](LICENCE)를 참고하세요.
