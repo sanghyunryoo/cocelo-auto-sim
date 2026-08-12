@@ -1,0 +1,60 @@
+/**:
+  ros__parameters:
+    # Keep PCD saving opt-in. The live global-map topic below is independent
+    # of this setting and is available in the normal ./launch.sh mode.
+    lio.map.save_map: false
+    # Keep the complete in-memory map. If save_map is changed to true, this
+    # writes one filtered PCD on shutdown instead of clearing map chunks while
+    # /lio/global_map is being published.
+    lio.map.save_interval: -1
+
+    lio.ros.lidar_topic: "/livox/lidar"
+    lio.ros.imu_topic: "/livox/imu"
+    lio.ros.global_frame: "map"
+    lio.ros.odom_frame: "odom"
+
+    lio.sensor.lidar_type: 1 # Livox CustomMsg
+    # Preserve near-field returns for the front-wall angle estimator.
+    lio.sensor.blind: 0.05
+    lio.sensor.maxrange: 100.0
+    lio.sensor.filter_rate: 1
+    lio.sensor.enable_downsample: true
+    lio.sensor.voxel_fliter_size: 0.05
+    lio.sensor.gravity_norm: 9.81
+    lio.sensor.imu_type: 1
+    lio.sensor.imu_na: 0.1
+    lio.sensor.imu_ng: 0.1
+    lio.sensor.imu_nba: 0.0001
+    lio.sensor.imu_nbg: 0.0001
+
+    # LiDAR in IMU frame: translation followed by row-major rotation matrix.
+    # launch.sh overrides this from autonomy_light.imu_from_lidar_*.
+    lio.extrinsic.lidar_imu: [-0.011, -0.02329, 0.04412,
+                              1.0, 0.0, 0.0,
+                              0.0, 1.0, 0.0,
+                              0.0, 0.0, 1.0]
+    lio.extrinsic.odom_robo: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+
+    lio.hash_map.hash_capacity: 2000000
+    lio.hash_map.vox_resolution: 0.5
+
+    lio.kf.kf_type: 0
+    lio.kf.kf_max_iterations: 4
+    lio.kf.kf_align_gravity: true
+    lio.kf.kf_quit_eps: 0.001
+
+    # /lio/cloud_world feeds the wall-angle estimator.
+    lio.output.robot: false
+    lio.output.plan_env_world: false
+    lio.output.plan_env_body: false
+    lio.output.ml_map: false
+    lio.output.planner: false
+    lio.output.map: true
+    lio.output.dense: true
+    # Cumulative PointCloud2 in the map frame, published about once per
+    # second and retained for late subscribers: /lio/global_map.
+    lio.output.global_map: true
+    lio.output.pub_step: 1
+    lio.output.tf_publish_rate_hz: 10.0
+
+    lio.eva.timer: false

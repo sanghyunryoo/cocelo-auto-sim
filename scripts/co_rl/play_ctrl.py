@@ -28,7 +28,7 @@ from scripts.co_rl.core.utils.analyzer import Analyzer
 from scripts.co_rl.ros2 import (
     create_auto_camera_ros_graphs,
     create_auto_stereo_camera_ros_graphs,
-    create_clock_ros_graph,
+    create_clock_publisher,
     create_command_user_bridge,
     create_front_depth_camera_ros_graphs,
     create_front_camera_publisher,
@@ -282,13 +282,43 @@ parser.add_argument(
     "--ros2_path_gt_topic",
     type=str,
     default="/path_gt",
-    help="ROS 2 topic for nav_msgs/Path ground-truth robot root path.",
+    help="ROS 2 topic for the lidar-referenced nav_msgs/Path ground truth.",
+)
+parser.add_argument(
+    "--ros2_gt_odom_topic",
+    type=str,
+    default="/gt/lidar_odom",
+    help="ROS 2 topic for lidar-referenced ground-truth Odometry.",
+)
+parser.add_argument(
+    "--ros2_gt_child_frame_id",
+    type=str,
+    default="f4/lidar_link",
+    help="Child frame identified by path_gt and ground-truth Odometry poses.",
+)
+parser.add_argument(
+    "--ros2_slam_diagnostics_csv",
+    type=str,
+    default="",
+    help="Optional CSV path recording synchronized lidar GT and LIO odometry.",
 )
 parser.add_argument(
     "--ros2_path_gt_max_poses",
     type=int,
     default=5000,
     help="Maximum number of poses retained in the published path_gt message.",
+)
+parser.add_argument(
+    "--ros2_publish_root_tf",
+    type=str2bool,
+    default=True,
+    help="Publish the root-frame to robot-base TF. Disable when SLAM owns the map/odom/base chain.",
+)
+parser.add_argument(
+    "--ros2_path_gt_relative_to_initial",
+    type=str2bool,
+    default=False,
+    help="Express path_gt relative to the initial simulated robot pose.",
 )
 parser.add_argument(
     "--enable_ros2_height_map",
@@ -405,6 +435,12 @@ parser.add_argument(
     default=10.0,
     help="Publish local keyboard CommandUser messages at this rate in Hz.",
 )
+parser.add_argument(
+    "--ros2_nav_cmd_vel_topic",
+    type=str,
+    default="/nav2/cmd_vel",
+    help="geometry_msgs/Twist topic used by Nav2 to command the simulated robot.",
+)
 
 # append CO-RL cli arguments
 cli_args.add_co_rl_args(parser)
@@ -443,7 +479,11 @@ from scripts.co_rl.core.wrapper import (
 )
 
 from isaaclab.envs import DirectMARLEnv, multi_agent_to_single_agent
-from isaaclab.utils.pretrained_checkpoint import get_published_pretrained_checkpoint
+try:
+    # Isaac Lab 2.3 and newer moved this helper into isaaclab_rl.
+    from isaaclab_rl.utils.pretrained_checkpoint import get_published_pretrained_checkpoint
+except ModuleNotFoundError:
+    from isaaclab.utils.pretrained_checkpoint import get_published_pretrained_checkpoint
 
 # Import extensions to set up environment tasks
 import lab.flamingo.tasks  # noqa: F401
@@ -1658,11 +1698,8 @@ def main():
             f"to '{args_cli.ros2_auto_left_image_topic}' and '{args_cli.ros2_auto_right_image_topic}'"
         )
 
-    try:
-        create_clock_ros_graph()
-        print("[INFO] Publishing ROS 2 simulation clock to '/clock'")
-    except ModuleNotFoundError as exc:
-        print(f"[WARN] ROS 2 /clock OmniGraph is unavailable; skipping it ({exc}).")
+    clock_publisher = create_clock_publisher(topic_name="/clock")
+    print("[INFO] Publishing authoritative ROS 2 simulation clock to '/clock'")
 
     time_publisher = create_time_ros_graph(topic_name=args_cli.ros2_time_topic)
     print(f"[INFO] Publishing simulation time to '{args_cli.ros2_time_topic}'")
@@ -1693,6 +1730,7 @@ def main():
             graph_path="/ROS_Mid360Imu",
             topic_name=args_cli.ros2_mid360_imu_topic,
             frame_id=args_cli.ros2_mid360_frame_id,
+            derive_angular_velocity=True,
         )
         print(f"[INFO] Publishing ROS 2 lidar IMU to '{args_cli.ros2_mid360_imu_topic}'")
 
@@ -1703,7 +1741,12 @@ def main():
             world_frame_id=args_cli.ros2_world_frame_id,
             base_frame_id=args_cli.ros2_base_frame_id,
             path_gt_topic=args_cli.ros2_path_gt_topic,
+            gt_odom_topic=args_cli.ros2_gt_odom_topic,
+            gt_child_frame_id=args_cli.ros2_gt_child_frame_id,
             path_gt_max_poses=args_cli.ros2_path_gt_max_poses,
+            publish_root_tf=args_cli.ros2_publish_root_tf,
+            relative_to_initial_pose=args_cli.ros2_path_gt_relative_to_initial,
+            diagnostics_csv_path=args_cli.ros2_slam_diagnostics_csv,
         )
         print(
             "[INFO] Publishing ROS 2 robot state for RViz "
@@ -1783,8 +1826,17 @@ def main():
     sim_time_s = 0.0
     ros_publish_period_s = 1.0 / 50.0
     next_ros_publish_time_s = 0.0
-    imu_publish_period_s = 1.0 / max(float(args_cli.ros2_imu_rate), 1.0e-6)
-    next_imu_publish_time_s = 0.0
+    requested_imu_publish_period_s = 1.0 / max(float(args_cli.ros2_imu_rate), 1.0e-6)
+    # Sensor tensors are sampled once per environment step. Publishing the
+    # same tensor multiple times with invented intermediate stamps corrupts
+    # inertial integration, so cap ROS IMU output at the actual sample rate.
+    imu_publish_period_s = max(requested_imu_publish_period_s, env_dt)
+    next_imu_publish_time_s = imu_publish_period_s
+    if requested_imu_publish_period_s < env_dt:
+        print(
+            f"[INFO] Capping ROS 2 IMU rate at the simulation sample rate "
+            f"({1.0 / env_dt:.1f} Hz; requested {args_cli.ros2_imu_rate:.1f} Hz)."
+        )
     camera_publish_period_s = 1.0 / max(float(args_cli.ros2_camera_rate), 1.0e-6)
     next_camera_publish_time_s = 0.0
     mid360_publish_period_s = 1.0 / max(float(args_cli.ros2_mid360_rate), 1.0e-6)
@@ -1824,10 +1876,12 @@ def main():
             command_dim=teleop_spec.command_dim,
             axis_names=teleop_spec.axis_names,
             child_frame_id=args_cli.ros2_base_frame_id,
+            cmd_vel_topic=args_cli.ros2_nav_cmd_vel_topic,
         )
         print(
             "[INFO] Bridging ROS 2 CommandUser "
-            f"('{args_cli.ros2_command_user_topic}') to command term '{teleop_spec.command_term_name}'"
+            f"('{args_cli.ros2_command_user_topic}') and Nav2 Twist "
+            f"('{args_cli.ros2_nav_cmd_vel_topic}') to command term '{teleop_spec.command_term_name}'"
         )
         if args_cli.teleop and args_cli.ros2_command_user_publish_keyboard:
             print("[INFO] Keyboard teleop commands are published as core/msg/CommandUser before applying to sim.")
@@ -1932,6 +1986,7 @@ def main():
                         next_perf_report_wall_s = wall_now_s + float(args_cli.perf_report_interval)
 
                 if sim_time_s + 1.0e-9 >= next_ros_publish_time_s:
+                    clock_publisher.publish(sim_time_s)
                     time_publisher.publish(sim_time_s)
                     if robot_state_publisher is not None and robot is not None:
                         robot_data = _safe_get_attr(robot, "data", None)
@@ -1966,6 +2021,16 @@ def main():
                                 root_position_xyz=root_pos[0].detach().cpu().tolist(),
                                 root_orientation_wxyz=root_quat[0].detach().cpu().tolist(),
                                 timestamp_s=sim_time_s,
+                                gt_position_xyz=(
+                                    mid360_imu_sensor.data.pos_w[0].detach().cpu().tolist()
+                                    if mid360_imu_sensor is not None
+                                    else None
+                                ),
+                                gt_orientation_wxyz=(
+                                    mid360_imu_sensor.data.quat_w[0].detach().cpu().tolist()
+                                    if mid360_imu_sensor is not None
+                                    else None
+                                ),
                             )
 
                     if height_map_publisher is not None and height_map_sensor is not None:
@@ -2019,8 +2084,17 @@ def main():
                 ):
                     mid360_data = _safe_get_attr(mid360_lidar_sensor, "data", None)
                     ray_hits_w = _safe_get_attr(mid360_data, "ray_hits_w", None)
-                    sensor_pos_w = _safe_get_attr(mid360_data, "pos_w", None)
-                    sensor_quat_w = _safe_get_attr(mid360_data, "quat_w", None)
+                    # RayCaster has an additional pattern-orientation offset.
+                    # Express world hits in the physical lidar/IMU link frame,
+                    # which is the frame declared in PointCloud2 and used by
+                    # Super-LIO's identity lidar-to-IMU extrinsic.
+                    lidar_pose_data = (
+                        _safe_get_attr(mid360_imu_sensor, "data", None)
+                        if mid360_imu_sensor is not None
+                        else mid360_data
+                    )
+                    sensor_pos_w = _safe_get_attr(lidar_pose_data, "pos_w", None)
+                    sensor_quat_w = _safe_get_attr(lidar_pose_data, "quat_w", None)
                     if (
                         isinstance(ray_hits_w, torch.Tensor)
                         and isinstance(sensor_pos_w, torch.Tensor)
@@ -2057,6 +2131,8 @@ def main():
             adas_camera_publisher.close()
         if command_user_bridge is not None:
             command_user_bridge.close()
+        if clock_publisher is not None:
+            clock_publisher.close()
         if time_publisher is not None:
             time_publisher.close()
         env.close()

@@ -6,8 +6,12 @@ Panels:
       Expanded:
         - /Global Options1
         - /Status1
+        - /Livox Lidar1
+        - /Nav2 Costmaps1
       Splitter Ratio: 0.5
-    Tree Height: 1195
+    Tree Height: 1143
+  - Class: nav2_rviz_plugins/Navigation 2
+    Name: Navigation 2
 Visualization Manager:
   Class: ""
   Displays:
@@ -32,7 +36,7 @@ Visualization Manager:
     - Alpha: 1
       Buffer Length: 1
       Class: rviz_default_plugins/Path
-      Color: 25; 255; 0
+      Color: 0; 102; 255
       Enabled: true
       Head Diameter: 0.30000001192092896
       Head Length: 0.20000000298023224
@@ -52,12 +56,199 @@ Visualization Manager:
       Topic:
         Depth: 5
         Durability Policy: Volatile
+        Filter size: 10
         History Policy: Keep Last
         Reliability Policy: Reliable
         Value: /path_gt
       Value: true
+    - Alpha: 1
+      Buffer Length: 1
+      Class: rviz_default_plugins/Path
+      Color: 25; 255; 0
+      Enabled: true
+      Head Diameter: 0.30000001192092896
+      Head Length: 0.20000000298023224
+      Length: 0.30000001192092896
+      Line Style: Lines
+      Line Width: 0.05000000074505806
+      Name: path_slam
+      Offset:
+        X: 0
+        Y: 0
+        Z: 0.05000000074505806
+      Pose Color: 25; 255; 0
+      Pose Style: None
+      Radius: 0.029999999329447746
+      Shaft Diameter: 0.10000000149011612
+      Shaft Length: 0.10000000149011612
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        Filter size: 10
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /path_slam
+      Value: true
+    - Alpha: 1
+      Buffer Length: 1
+      Class: rviz_default_plugins/Path
+      Color: 255; 170; 0
+      Enabled: true
+      Head Diameter: 0.30000001192092896
+      Head Length: 0.20000000298023224
+      Length: 0.30000001192092896
+      Line Style: Lines
+      Line Width: 0.07000000029802322
+      Name: nav2_plan
+      Offset:
+        X: 0
+        Y: 0
+        Z: 0.0800000011920929
+      Pose Color: 255; 170; 0
+      Pose Style: None
+      Radius: 0.029999999329447746
+      Shaft Diameter: 0.10000000149011612
+      Shaft Length: 0.10000000149011612
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        Filter size: 10
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /plan
+      Value: true
+    - Class: rviz_common/Group
+      Displays:
+        - Alpha: 1
+          Class: rviz_default_plugins/Map
+          Color Scheme: map
+          Draw Behind: true
+          Enabled: true
+          Name: Dynamic Occupancy Map (white)
+          Topic:
+            Depth: 5
+            Durability Policy: Transient Local
+            History Policy: Keep Last
+            Reliability Policy: Reliable
+            Value: /map
+          Update Topic:
+            Depth: 5
+            Durability Policy: Volatile
+            History Policy: Keep Last
+            Reliability Policy: Reliable
+            Value: /map_updates
+          Use Timestamp: false
+          Value: true
+        - Alpha: 0.3
+          Class: rviz_default_plugins/Map
+          Color Scheme: costmap
+          Draw Behind: false
+          Enabled: true
+          Name: Global Inflation Cost
+          Topic:
+            Depth: 5
+            Durability Policy: Transient Local
+            History Policy: Keep Last
+            Reliability Policy: Reliable
+            Value: /global_costmap/costmap
+          Update Topic:
+            Depth: 5
+            Durability Policy: Volatile
+            History Policy: Keep Last
+            Reliability Policy: Reliable
+            Value: /global_costmap/costmap_updates
+          Use Timestamp: false
+          Value: true
+        - Alpha: 0.4
+          Class: rviz_default_plugins/Map
+          Color Scheme: costmap
+          Draw Behind: false
+          Enabled: true
+          Name: Local Costmap
+          Topic:
+            Depth: 5
+            Durability Policy: Transient Local
+            History Policy: Keep Last
+            Reliability Policy: Reliable
+            Value: /local_costmap/costmap
+          Update Topic:
+            Depth: 5
+            Durability Policy: Volatile
+            History Policy: Keep Last
+            Reliability Policy: Reliable
+            Value: /local_costmap/costmap_updates
+          Use Timestamp: false
+          Value: true
+        - Alpha: 0.8
+          Class: rviz_default_plugins/Map
+          Color Scheme: costmap
+          Draw Behind: false
+          Enabled: false
+          Name: Global Obstacles
+          Topic:
+            Depth: 5
+            Durability Policy: Transient Local
+            History Policy: Keep Last
+            Reliability Policy: Reliable
+            Value: /global_costmap/obstacle_layer
+          Update Topic:
+            Depth: 5
+            Durability Policy: Volatile
+            History Policy: Keep Last
+            Reliability Policy: Reliable
+            Value: /global_costmap/obstacle_layer_updates
+          Use Timestamp: false
+          Value: false
+        - Alpha: 0.9
+          Class: rviz_default_plugins/Map
+          Color Scheme: costmap
+          Draw Behind: false
+          Enabled: false
+          Name: Local Obstacles
+          Topic:
+            Depth: 5
+            Durability Policy: Transient Local
+            History Policy: Keep Last
+            Reliability Policy: Reliable
+            Value: /local_costmap/obstacle_layer
+          Update Topic:
+            Depth: 5
+            Durability Policy: Volatile
+            History Policy: Keep Last
+            Reliability Policy: Reliable
+            Value: /local_costmap/obstacle_layer_updates
+          Use Timestamp: false
+          Value: false
+        - Alpha: 1
+          Class: rviz_default_plugins/Polygon
+          Color: 0; 255; 255
+          Enabled: true
+          Name: Local Footprint
+          Topic:
+            Depth: 5
+            Durability Policy: Volatile
+            History Policy: Keep Last
+            Reliability Policy: Reliable
+            Value: /local_costmap/published_footprint
+          Value: true
+        - Alpha: 0.7
+          Class: rviz_default_plugins/Polygon
+          Color: 255; 0; 255
+          Enabled: true
+          Name: Global Footprint
+          Topic:
+            Depth: 5
+            Durability Policy: Volatile
+            History Policy: Keep Last
+            Reliability Policy: Reliable
+            Value: /global_costmap/published_footprint
+          Value: true
+      Enabled: true
+      Name: Nav2 Costmaps
     - Class: rviz_default_plugins/TF
       Enabled: true
+      Filter (blacklist): ""
+      Filter (whitelist): ""
       Frame Timeout: 15
       Frames:
         All Enabled: true
@@ -95,40 +286,49 @@ Visualization Manager:
           Value: true
         f4/sensor_mount_link:
           Value: true
+        f4/slam_imu_link:
+          Value: true
+        map:
+          Value: true
+        odom:
+          Value: true
       Marker Scale: 0.4000000059604645
       Name: TF
       Show Arrows: true
       Show Axes: true
       Show Names: false
       Tree:
-        f4/base_link:
-          f4/FL_caster_link:
-            {}
-          f4/FR_caster_link:
-            {}
-          f4/RL_caster_link:
-            {}
-          f4/RR_caster_link:
-            {}
-          f4/left_shoulder_link:
-            f4/left_leg_link:
-              f4/left_wheel_link:
-                {}
-          f4/left_upper_link:
-            {}
-          f4/right_shoulder_link:
-            f4/right_leg_link:
-              f4/right_wheel_link:
-                {}
-          f4/right_upper_link:
-            {}
-          f4/sensor_mount_link:
-            f4/A_camera_link:
-              {}
-            f4/F_camera_link:
-              {}
-            f4/lidar_link:
-              {}
+        map:
+          odom:
+            f4/slam_imu_link:
+              f4/base_link:
+                f4/FL_caster_link:
+                  {}
+                f4/FR_caster_link:
+                  {}
+                f4/RL_caster_link:
+                  {}
+                f4/RR_caster_link:
+                  {}
+                f4/left_shoulder_link:
+                  f4/left_leg_link:
+                    f4/left_wheel_link:
+                      {}
+                f4/left_upper_link:
+                  {}
+                f4/right_shoulder_link:
+                  f4/right_leg_link:
+                    f4/right_wheel_link:
+                      {}
+                f4/right_upper_link:
+                  {}
+                f4/sensor_mount_link:
+                  f4/A_camera_link:
+                    {}
+                  f4/F_camera_link:
+                    {}
+                  f4/lidar_link:
+                    {}
       Update Interval: 0
       Value: true
     - Alpha: 1
@@ -252,34 +452,34 @@ Visualization Manager:
       Channel Name: intensity
       Class: rviz_default_plugins/PointCloud2
       Color: 255; 255; 255
-      Color Transformer: ""
+      Color Transformer: Intensity
       Decay Time: 0
-      Enabled: true
+      Enabled: false
       Invert Rainbow: false
       Max Color: 255; 255; 255
-      Max Intensity: 4096
+      Max Intensity: 0
       Min Color: 0; 0; 0
       Min Intensity: 0
-      Name: Livox Lidar
-      Position Transformer: ""
+      Name: SLAM Registered Lidar
+      Position Transformer: XYZ
       Selectable: true
       Size (Pixels): 3
-      Size (m): 0.009999999776482582
+      Size (m): 0.05000000074505806
       Style: Flat Squares
       Topic:
         Depth: 5
         Durability Policy: Volatile
-        Filter size: 10
+        Filter size: 20
         History Policy: Keep Last
         Reliability Policy: Reliable
-        Value: /f4/lidar/points
+        Value: /lio/cloud_world
       Use Fixed Frame: true
       Use rainbow: true
-      Value: true
+      Value: false
   Enabled: true
   Global Options:
     Background Color: 24; 24; 27
-    Fixed Frame: world
+    Fixed Frame: map
     Frame Rate: 30
   Name: root
   Tools:
@@ -287,6 +487,8 @@ Visualization Manager:
       Hide Inactive Objects: true
     - Class: rviz_default_plugins/MoveCamera
     - Class: rviz_default_plugins/Select
+    - Class: nav2_rviz_plugins/GoalTool
+    - Class: nav2_rviz_plugins/CostmapCostTool
   Transformation:
     Current:
       Class: rviz_default_plugins/TF
@@ -294,7 +496,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/Orbit
-      Distance: 4
+      Distance: 18
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -303,24 +505,24 @@ Visualization Manager:
       Focal Point:
         X: 0
         Y: 0
-        Z: 0.5
+        Z: 0
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.4000000059604645
+      Pitch: 1.2000000476837158
       Target Frame: f4/base_link
       Value: Orbit (rviz_default_plugins)
-      Yaw: 0.699999988079071
+      Yaw: 0
     Saved: ~
 Window Geometry:
   Displays:
     collapsed: false
-  Height: 1410
+  Height: 1371
   Hide Left Dock: false
   Hide Right Dock: false
-  QMainWindow State: 000000ff00000000fd0000000100000000000001560000052cfc0200000001fb000000100044006900730070006c006100790073010000003b0000052c000000c700ffffff000005350000052c00000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
+  QMainWindow State: 000000ff00000000fd000000010000000000000156000004fdfc0200000001fb000000100044006900730070006c006100790073010000003f000004fd000000cc00ffffff00000535000004fd00000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
   Width: 1681
   X: 122
-  Y: 75
+  Y: 32

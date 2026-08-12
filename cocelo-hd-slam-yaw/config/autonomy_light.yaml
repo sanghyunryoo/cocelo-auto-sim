@@ -1,0 +1,172 @@
+autonomy_light:
+  ros__parameters:
+    ros_domain_id: 88
+    slam_enable: true
+
+    # Super-LIO publishes map -> odom -> imu. The launcher completes the
+    # calibrated chain with imu -> base_link -> lidar_link.
+    target_frame: "base_link"
+    imu_frame: "imu"
+    lidar_frame: "lidar_link"
+    map_frame: "map"
+    odom_frame: "odom"
+    target_to_lidar_xyz: [0.234, 0.0, 0.077]
+    target_to_lidar_rpy: [0.0, 0.7854, 0.0]
+    # T_imu_lidar: keep this identical to the calibrated Super-LIO extrinsic.
+    imu_from_lidar_xyz: [-0.011, -0.02329, 0.04412]
+    imu_from_lidar_rpy: [0.0, 0.0, 0.0]
+
+    # All physical Livox settings are owned here. launch.sh turns this into a
+    # per-run driver JSON; do not edit third_party/livox_ros_driver2 JSON files.
+    # host_ip must already be assigned to interface; the launcher verifies it
+    # but never changes the computer network configuration itself.
+    livox:
+      model: "mid360"              # mid360 | mid360s
+      interface: "enP8p1s0"        # NIC physically connected to this LiDAR
+      host_ip: "192.168.1.50"      # computer NIC IP on the LiDAR subnet
+      lidar_ip: "192.168.1.166"    # configured IP of this LiDAR
+      # Driver2 publishes these exact CustomMsg/IMU streams. The launcher
+      # passes the same values to Super-LIO; do not configure them twice.
+      lidar_topic: "/livox/lidar"
+      imu_topic: "/livox/imu"
+      frame_id: "livox_frame"
+      publish_freq: 50.0
+      pcl_data_type: 1
+      pattern_mode: 0
+      # Keep these as CustomMsg (xfer_format: 1), which Super-LIO consumes.
+      xfer_format: 1
+      multi_topic: 0
+      data_src: 0
+      output_data_type: 0
+      cmdline_input_bd_code: "livox0000000001"
+      # These are the Livox SDK2 UDP defaults. They are configurable here for
+      # installations whose host-side ports must be changed.
+      lidar_ports:
+        cmd_data: 56100
+        push_msg: 56200
+        point_data: 56300
+        imu_data: 56400
+        log_data: 56500
+      host_ports:
+        cmd_data: 56101
+        push_msg: 56201
+        point_data: 56301
+        imu_data: 56401
+        log_data: 56501
+    super_lio_config_file: ""
+
+    # Isaac Sim integration. The simulator publishes an instantaneous
+    # Velodyne-layout PointCloud2 and an IMU at the same lidar_link pose.
+    # GT is independently published in map and never owns the live TF chain.
+    simulation:
+      lidar_topic: "/f4/lidar/points"
+      imu_topic: "/f4/lidar/imu"
+      lidar_type: 3
+      gravity_norm: 9.81
+      # Reject Isaac's initial contact-settling and numerical-derivative
+      # spikes instead of learning them as permanent IMU biases.
+      imu_init_samples: 100
+      imu_init_acc_norm_tolerance: 0.50
+      imu_init_acc_std_threshold: 0.30
+      imu_init_gyro_threshold: 0.03
+      imu_init_gyro_std_threshold: 0.02
+      # Limits on scan-to-map correction relative to the IMU prediction.
+      # This does not limit robot speed; it rejects a single false match.
+      max_scan_correction_translation: 0.50
+      max_scan_correction_rotation_deg: 15.0
+      slam_enable: true
+      # Protect the global TF from a false loop closure. Local odom remains
+      # continuous regardless; zero disables either guard for real deployments.
+      max_correction_translation: 2.0
+      max_correction_rotation_deg: 30.0
+      require_initial_alignment: false
+      map_frame: "map"
+      odom_frame: "odom"
+      imu_frame: "f4/slam_imu_link"
+      target_frame: "f4/base_link"
+      lidar_frame: "f4/lidar_link"
+      # T_base_lidar from the simulation URDF. The simulated LiDAR and its IMU
+      # share lidar_link, hence T_imu_lidar is identity.
+      target_to_lidar_xyz: [0.038335, 0.00162081, 0.138986]
+      target_to_lidar_rpy: [3.141592653589793, 0.0, 0.0]
+      imu_from_lidar_xyz: [0.0, 0.0, 0.0]
+      imu_from_lidar_rpy: [0.0, 0.0, 0.0]
+
+front_wall_angle_estimator:
+  ros__parameters:
+    # Super-LIO emits this de-skewed, registered PointCloud2 in the map
+    # frame. The estimator transforms every scan to base_frame at its stamp.
+    input_topic: "/lio/cloud_world"
+    output_topic: "/autonomy_light/front_wall_angle"
+    # A separate SLAM-yaw fallback angle in degrees. This does not change the
+    # RAW/SUBMAP/FINAL result above. It is the signed yaw remainder modulo 90:
+    # +93 deg becomes +3 deg and +88 deg becomes -2 deg.
+    slam_angle_topic: "/autonomy_light/slam_angle"
+    # All points that passed the ROI below, transformed into base_link.
+    roi_cloud_topic: "/autonomy_light/front_wall_roi"
+    base_frame: "base_link"
+    transform_timeout_sec: 0.05
+
+    # Front-only region of interest in base_link (x forward, y left, z up).
+    # Keep the near boundary low so a wall immediately ahead is included.
+    min_forward_distance_m: 0.05
+    max_forward_distance_m: 4.00
+    max_lateral_distance_m: 0.50
+    min_z_m: -1.5
+    max_z_m: 1.50
+    max_cloud_points: 5000
+
+    # A vertical obstacle face is fitted as a 2-D line in x-y with RANSAC,
+    # then refined by total least squares. Vertical span is measured after
+    # removing the fitted slope along the wall, which keeps ground returns
+    # out even while the robot is pitched and still accepts a 0.20–0.35 m
+    # low obstacle.
+    ransac_iterations: 400
+    ransac_distance_threshold_m: 0.025
+    # The observed front wall returns several hundred points per scan.  A
+    # lower gate admits sparse secondary surfaces, which can have a very
+    # different yaw and corrupt the temporal angle filter.
+    min_inliers: 150
+    min_horizontal_span_m: 0.50
+    min_vertical_span_m: 0.12
+    max_abs_relative_angle_deg: 70.0
+
+    # FINAL is circularly time-smoothed, then its output rate is bounded.
+    # Together these suppress one-scan 1–2 degree jumps while allowing a
+    # persistent change (robot turn or real wall hand-over) to track smoothly.
+    # Set max-rate to 0.0 to disable only the rate bound. Setting the time
+    # constant to 0.0 publishes an un-smoothed angle, except for this bound.
+    angle_filter_time_constant_sec: 0.45
+    angle_filter_reset_sec: 0.50
+    angle_filter_max_rate_deg_per_sec: 8.0
+
+    # The raw fit is supplemented by a rolling local submap. Prior ROI points
+    # are retained in the map frame and reprojected through timestamped LIO
+    # pose into the current base_link frame. This makes LIO yaw help stabilize
+    # the wall normal without assuming that the same wall exists everywhere.
+    # If the raw and submap planes disagree beyond either fusion gate, the raw
+    # scan is selected as the candidate. FINAL still uses its stabilizer so a
+    # one-scan conflict cannot cause a jump; a sustained new wall tracks in.
+    enable_submap_fusion: true
+    submap_history_sec: 0.75
+    submap_points_per_scan: 600
+    submap_max_points: 5000
+    submap_ransac_iterations: 160
+    fusion_max_angle_difference_deg: 3.0
+    fusion_max_distance_difference_m: 0.20
+
+    # launch.sh uses this gate in a temporary LIO pass, then discards that map
+    # and restarts operational LIO from the aligned pose. A rolling average of
+    # valid RAW/SUBMAP candidates must be inside this signed wall-angle
+    # tolerance. The launcher disables this internal gate after the restart,
+    # so normal RAW/SUBMAP/FINAL starts immediately at that point.
+    require_initial_alignment: true
+    initialization_tolerance_deg: 1.0
+    # The live qualified-fit rate is about 10–14 Hz. Keep this no greater
+    # than what initialization_window_sec can contain, otherwise INIT cannot
+    # ever release even when the angle is already inside tolerance.
+    initialization_min_frames: 10
+    initialization_window_sec: 1.0
+
+    # angle_stddev_deg is published for monitoring only; it never suppresses
+    # a geometrically valid wall-angle measurement.

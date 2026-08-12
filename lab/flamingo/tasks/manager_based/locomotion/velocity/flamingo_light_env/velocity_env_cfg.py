@@ -198,10 +198,10 @@ class MySceneCfg(InteractiveSceneCfg):
         ray_alignment="base",
         max_distance=15.0,
         pattern_cfg=patterns.LidarPatternCfg(
-            channels=8,
+            channels=16,
             vertical_fov_range=(-16.0, 16.0),
             horizontal_fov_range=(-180.0, 180.0),
-            horizontal_res=3.0,
+            horizontal_res=1.0,
         ),
         debug_vis=False,
     )

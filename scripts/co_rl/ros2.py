@@ -4,6 +4,7 @@ import os
 import sys
 import glob
 import importlib
+import math
 
 DEFAULT_FRONT_DEPTH_CAMERA_PRIM = "/World/envs/env_0/Robot/F_camera_link/front_depth_cam"
 DEFAULT_AUTO_DEPTH_CAMERA_PRIM = "/World/envs/env_0/Robot/A_camera_link/adas_camera"
@@ -86,10 +87,9 @@ def _import_ros2_command_user_type():
             "Expected a path like /root/ros2_ws/install/core/local/lib/python*/dist-packages/core/msg."
         )
 
-    for path in reversed(unique_paths):
-        if path in sys.path:
-            sys.path.remove(path)
-        sys.path.insert(0, path)
+    # Only promote the custom core package. Promoting every AMENT Python path
+    # would put the system Jazzy Python 3.12 messages ahead of Isaac Sim's
+    # bundled Python 3.11 messages and break their native type support.
     for path in reversed(ros2_core_paths):
         if path in sys.path:
             sys.path.remove(path)
@@ -135,15 +135,26 @@ class Ros2ImuGraphPublisher:
 class Ros2ImuPublisher:
     """ROS 2 sensor_msgs/Imu publisher using rclpy."""
 
-    def __init__(self, topic_name: str, frame_id: str, node_name: str = "isaac_imu_bridge"):
+    def __init__(
+        self,
+        topic_name: str,
+        frame_id: str,
+        node_name: str = "isaac_imu_bridge",
+        derive_angular_velocity: bool = False,
+    ):
+        import math
         import rclpy
         from builtin_interfaces.msg import Time
         from sensor_msgs.msg import Imu
 
         self._rclpy = rclpy
+        self._math = math
         self._time_type = Time
         self._imu_type = Imu
         self._frame_id = frame_id
+        self._derive_angular_velocity = bool(derive_angular_velocity)
+        self._previous_orientation = None
+        self._previous_timestamp_s = None
         self._owns_context = False
 
         if not rclpy.ok():
@@ -160,21 +171,71 @@ class Ros2ImuPublisher:
         linear_acceleration_xyz,
         timestamp_s: float,
     ) -> None:
+        orientation = self._normalize_quaternion(tuple(float(value) for value in orientation_wxyz))
+        angular_velocity = tuple(float(value) for value in angular_velocity_xyz)
+        if self._derive_angular_velocity:
+            angular_velocity = self._angular_velocity_from_orientation(orientation, float(timestamp_s))
+
         msg = self._imu_type()
         msg.header.stamp = self._stamp(timestamp_s)
         msg.header.frame_id = self._frame_id
-        msg.orientation.w = float(orientation_wxyz[0])
-        msg.orientation.x = float(orientation_wxyz[1])
-        msg.orientation.y = float(orientation_wxyz[2])
-        msg.orientation.z = float(orientation_wxyz[3])
-        msg.angular_velocity.x = float(angular_velocity_xyz[0])
-        msg.angular_velocity.y = float(angular_velocity_xyz[1])
-        msg.angular_velocity.z = float(angular_velocity_xyz[2])
+        msg.orientation.w = orientation[0]
+        msg.orientation.x = orientation[1]
+        msg.orientation.y = orientation[2]
+        msg.orientation.z = orientation[3]
+        msg.angular_velocity.x = angular_velocity[0]
+        msg.angular_velocity.y = angular_velocity[1]
+        msg.angular_velocity.z = angular_velocity[2]
         msg.linear_acceleration.x = float(linear_acceleration_xyz[0])
         msg.linear_acceleration.y = float(linear_acceleration_xyz[1])
         msg.linear_acceleration.z = float(linear_acceleration_xyz[2])
         self._publisher.publish(msg)
         self._rclpy.spin_once(self._node, timeout_sec=0.0)
+
+    @staticmethod
+    def _normalize_quaternion(quaternion):
+        norm = sum(value * value for value in quaternion) ** 0.5
+        if norm <= 1.0e-12:
+            return (1.0, 0.0, 0.0, 0.0)
+        return tuple(value / norm for value in quaternion)
+
+    @staticmethod
+    def _quaternion_multiply(first, second):
+        aw, ax, ay, az = first
+        bw, bx, by, bz = second
+        return (
+            aw * bw - ax * bx - ay * by - az * bz,
+            aw * bx + ax * bw + ay * bz - az * by,
+            aw * by - ax * bz + ay * bw + az * bx,
+            aw * bz + ax * by - ay * bx + az * bw,
+        )
+
+    def _angular_velocity_from_orientation(self, orientation, timestamp_s: float):
+        previous = self._previous_orientation
+        previous_timestamp_s = self._previous_timestamp_s
+        self._previous_orientation = orientation
+        self._previous_timestamp_s = timestamp_s
+        if previous is None or previous_timestamp_s is None:
+            return (0.0, 0.0, 0.0)
+
+        dt = timestamp_s - previous_timestamp_s
+        if dt <= 1.0e-6 or dt > 0.2:
+            return (0.0, 0.0, 0.0)
+        if sum(first * second for first, second in zip(previous, orientation)) < 0.0:
+            orientation = tuple(-value for value in orientation)
+            self._previous_orientation = orientation
+
+        relative = self._normalize_quaternion(
+            self._quaternion_multiply(
+                (previous[0], -previous[1], -previous[2], -previous[3]), orientation
+            )
+        )
+        vector_norm = sum(value * value for value in relative[1:]) ** 0.5
+        if vector_norm <= 1.0e-12:
+            return (0.0, 0.0, 0.0)
+        angle = 2.0 * self._math.atan2(vector_norm, max(relative[0], 0.0))
+        scale = angle / (vector_norm * dt)
+        return tuple(value * scale for value in relative[1:])
 
     def close(self) -> None:
         if self._node is not None:
@@ -223,6 +284,44 @@ class Ros2TimePublisher:
             self._rclpy.shutdown()
 
 
+class Ros2ClockPublisher:
+    """Publish authoritative ROS /clock messages from Isaac simulation time."""
+
+    def __init__(self, topic_name: str = "/clock"):
+        import rclpy
+        from rclpy.qos import QoSDurabilityPolicy, QoSHistoryPolicy, QoSProfile, QoSReliabilityPolicy
+        from rosgraph_msgs.msg import Clock
+
+        self._rclpy = rclpy
+        self._clock_type = Clock
+        self._owns_context = False
+        if not rclpy.ok():
+            rclpy.init(args=None)
+            self._owns_context = True
+        self._node = rclpy.create_node("isaac_ros_clock_publisher")
+        clock_qos = QoSProfile(
+            history=QoSHistoryPolicy.KEEP_LAST,
+            depth=1,
+            reliability=QoSReliabilityPolicy.BEST_EFFORT,
+            durability=QoSDurabilityPolicy.VOLATILE,
+        )
+        self._publisher = self._node.create_publisher(Clock, topic_name, clock_qos)
+
+    def publish(self, timestamp_s: float) -> None:
+        msg = self._clock_type()
+        msg.clock.sec = int(timestamp_s)
+        msg.clock.nanosec = int((float(timestamp_s) - msg.clock.sec) * 1.0e9)
+        self._publisher.publish(msg)
+        self._rclpy.spin_once(self._node, timeout_sec=0.0)
+
+    def close(self) -> None:
+        if self._node is not None:
+            self._node.destroy_node()
+            self._node = None
+        if self._owns_context and self._rclpy.ok():
+            self._rclpy.shutdown()
+
+
 class Ros2HeightMapPointCloudPublisher:
     """Publish IsaacLab RayCaster hit points as a ROS 2 PointCloud2 message."""
 
@@ -232,6 +331,7 @@ class Ros2HeightMapPointCloudPublisher:
         frame_id: str = DEFAULT_HEIGHT_MAP_FRAME_ID,
         node_name: str = "isaac_height_map_pointcloud_bridge",
         max_range_m: float | None = None,
+        include_intensity_time: bool = False,
     ):
         import numpy as np
         import rclpy
@@ -246,6 +346,7 @@ class Ros2HeightMapPointCloudPublisher:
         self._owns_context = False
         self._frame_id = frame_id
         self._max_range_m = max_range_m
+        self._include_intensity_time = bool(include_intensity_time)
 
         if not rclpy.ok():
             rclpy.init(args=None)
@@ -258,6 +359,16 @@ class Ros2HeightMapPointCloudPublisher:
             PointField(name="y", offset=4, datatype=PointField.FLOAT32, count=1),
             PointField(name="z", offset=8, datatype=PointField.FLOAT32, count=1),
         ]
+        if self._include_intensity_time:
+            # Super-LIO accepts the standard Velodyne PointCloud2 layout. A
+            # simulated RayCaster scan is instantaneous, so both extra values
+            # are intentionally zero.
+            self._fields.extend(
+                [
+                    PointField(name="intensity", offset=12, datatype=PointField.FLOAT32, count=1),
+                    PointField(name="time", offset=16, datatype=PointField.FLOAT32, count=1),
+                ]
+            )
 
     def publish(self, ray_hits_w, timestamp_s: float, sensor_pos_w=None, sensor_quat_wxyz=None) -> None:
         if ray_hits_w is None:
@@ -286,10 +397,15 @@ class Ros2HeightMapPointCloudPublisher:
         msg.width = int(points.shape[0])
         msg.fields = self._fields
         msg.is_bigendian = False
-        msg.point_step = 12
+        if self._include_intensity_time:
+            payload = self._np.zeros((points.shape[0], 5), dtype=self._np.float32)
+            payload[:, :3] = points
+        else:
+            payload = points.astype(self._np.float32, copy=False)
+        msg.point_step = int(payload.shape[1] * payload.dtype.itemsize)
         msg.row_step = msg.point_step * msg.width
         msg.is_dense = True
-        msg.data = points.astype(self._np.float32, copy=False).tobytes()
+        msg.data = payload.tobytes()
 
         self._publisher.publish(msg)
         self._rclpy.spin_once(self._node, timeout_sec=0.0)
@@ -339,11 +455,17 @@ class Ros2Mid360PointCloudPublisher(Ros2HeightMapPointCloudPublisher):
         node_name: str = "isaac_lidar_pointcloud_bridge",
         max_range_m: float = 15.0,
     ):
-        super().__init__(topic_name=topic_name, frame_id=frame_id, node_name=node_name, max_range_m=max_range_m)
+        super().__init__(
+            topic_name=topic_name,
+            frame_id=frame_id,
+            node_name=node_name,
+            max_range_m=max_range_m,
+            include_intensity_time=True,
+        )
 
 
 class Ros2RobotStatePublisher:
-    """Publish env_0 joint states for RViz robot visualization."""
+    """Publish env_0 joint states and lidar-referenced ground truth."""
 
     def __init__(
         self,
@@ -351,13 +473,22 @@ class Ros2RobotStatePublisher:
         world_frame_id: str = DEFAULT_WORLD_FRAME_ID,
         base_frame_id: str = DEFAULT_BASE_FRAME_ID,
         path_gt_topic: str = DEFAULT_PATH_GT_TOPIC,
+        gt_odom_topic: str = "/gt/lidar_odom",
+        gt_child_frame_id: str = DEFAULT_MID360_FRAME_ID,
         path_gt_max_poses: int = 5000,
+        publish_root_tf: bool = True,
+        relative_to_initial_pose: bool = False,
+        diagnostics_csv_path: str = "",
+        lio_odom_topic: str = "/lio/odom",
+        lio_map_odom_topic: str = "/lio/odom_map",
     ):
+        import csv
         import rclpy
         from builtin_interfaces.msg import Time
         from geometry_msgs.msg import TransformStamped
         from geometry_msgs.msg import PoseStamped
         from nav_msgs.msg import Path
+        from nav_msgs.msg import Odometry
         from sensor_msgs.msg import JointState
         from tf2_ros import TransformBroadcaster
 
@@ -366,11 +497,22 @@ class Ros2RobotStatePublisher:
         self._transform_type = TransformStamped
         self._pose_stamped_type = PoseStamped
         self._path_type = Path
+        self._odom_type = Odometry
         self._joint_state_type = JointState
         self._world_frame_id = world_frame_id
         self._base_frame_id = base_frame_id
+        self._gt_child_frame_id = gt_child_frame_id
         self._path_gt_max_poses = max(int(path_gt_max_poses), 1)
         self._path_gt_poses = []
+        self._publish_root_tf = bool(publish_root_tf)
+        self._relative_to_initial_pose = bool(relative_to_initial_pose)
+        self._initial_root_position = None
+        self._initial_root_orientation = None
+        self._latest_lio_odom = None
+        self._latest_lio_map_odom = None
+        self._diagnostics_file = None
+        self._diagnostics_writer = None
+        self._last_diagnostics_flush_s = -1.0
         self._owns_context = False
 
         if not rclpy.ok():
@@ -380,7 +522,28 @@ class Ros2RobotStatePublisher:
         self._node = rclpy.create_node("isaac_robot_state_bridge")
         self._joint_state_pub = self._node.create_publisher(JointState, joint_states_topic, 10)
         self._path_gt_pub = self._node.create_publisher(Path, path_gt_topic, 10)
-        self._tf_broadcaster = TransformBroadcaster(self._node)
+        self._gt_odom_pub = self._node.create_publisher(Odometry, gt_odom_topic, 10)
+        self._lio_odom_sub = self._node.create_subscription(
+            Odometry, lio_odom_topic, self._on_lio_odom, 20
+        )
+        self._lio_map_odom_sub = self._node.create_subscription(
+            Odometry, lio_map_odom_topic, self._on_lio_map_odom, 20
+        )
+        self._tf_broadcaster = TransformBroadcaster(self._node) if self._publish_root_tf else None
+        if diagnostics_csv_path:
+            self._diagnostics_file = open(diagnostics_csv_path, "w", newline="", encoding="utf-8")
+            self._diagnostics_writer = csv.writer(self._diagnostics_file)
+            self._diagnostics_writer.writerow(
+                [
+                    "sim_time_s",
+                    "gt_x", "gt_y", "gt_z", "gt_qx", "gt_qy", "gt_qz", "gt_qw",
+                    "lio_odom_x", "lio_odom_y", "lio_odom_z",
+                    "lio_odom_vx", "lio_odom_vy", "lio_odom_vz",
+                    "lio_map_x", "lio_map_y", "lio_map_z",
+                    "global_position_error_m",
+                ]
+            )
+            self._diagnostics_file.flush()
 
     def publish(
         self,
@@ -390,8 +553,19 @@ class Ros2RobotStatePublisher:
         root_position_xyz,
         root_orientation_wxyz,
         timestamp_s: float,
+        gt_position_xyz=None,
+        gt_orientation_wxyz=None,
     ) -> None:
+        # Drain LIO callbacks before choosing the relative GT origin. In SLAM
+        # mode the filter starts only after stationary-IMU initialization;
+        # using Isaac's earlier un-settled pose would create a permanent GT
+        # offset even when both trajectories are otherwise identical.
+        self._rclpy.spin_once(self._node, timeout_sec=0.0)
         stamp = self._stamp(timestamp_s)
+        root_position_xyz = tuple(float(value) for value in root_position_xyz)
+        root_orientation_wxyz = self._normalize_quaternion(
+            tuple(float(value) for value in root_orientation_wxyz)
+        )
 
         joint_msg = self._joint_state_type()
         joint_msg.header.stamp = stamp
@@ -400,29 +574,39 @@ class Ros2RobotStatePublisher:
         joint_msg.velocity = [float(value) for value in joint_velocities]
         self._joint_state_pub.publish(joint_msg)
 
-        tf_msg = self._transform_type()
-        tf_msg.header.stamp = stamp
-        tf_msg.header.frame_id = self._world_frame_id
-        tf_msg.child_frame_id = self._base_frame_id
-        tf_msg.transform.translation.x = float(root_position_xyz[0])
-        tf_msg.transform.translation.y = float(root_position_xyz[1])
-        tf_msg.transform.translation.z = float(root_position_xyz[2])
-        tf_msg.transform.rotation.w = float(root_orientation_wxyz[0])
-        tf_msg.transform.rotation.x = float(root_orientation_wxyz[1])
-        tf_msg.transform.rotation.y = float(root_orientation_wxyz[2])
-        tf_msg.transform.rotation.z = float(root_orientation_wxyz[3])
-        self._tf_broadcaster.sendTransform(tf_msg)
+        if self._relative_to_initial_pose and self._latest_lio_map_odom is None:
+            return
+
+        gt_position_xyz, gt_orientation_wxyz = self._path_pose(
+            gt_position_xyz if gt_position_xyz is not None else root_position_xyz,
+            gt_orientation_wxyz if gt_orientation_wxyz is not None else root_orientation_wxyz,
+            reference_orientation_wxyz=root_orientation_wxyz,
+        )
+
+        if self._tf_broadcaster is not None:
+            tf_msg = self._transform_type()
+            tf_msg.header.stamp = stamp
+            tf_msg.header.frame_id = self._world_frame_id
+            tf_msg.child_frame_id = self._base_frame_id
+            tf_msg.transform.translation.x = root_position_xyz[0]
+            tf_msg.transform.translation.y = root_position_xyz[1]
+            tf_msg.transform.translation.z = root_position_xyz[2]
+            tf_msg.transform.rotation.w = root_orientation_wxyz[0]
+            tf_msg.transform.rotation.x = root_orientation_wxyz[1]
+            tf_msg.transform.rotation.y = root_orientation_wxyz[2]
+            tf_msg.transform.rotation.z = root_orientation_wxyz[3]
+            self._tf_broadcaster.sendTransform(tf_msg)
 
         pose_msg = self._pose_stamped_type()
         pose_msg.header.stamp = stamp
         pose_msg.header.frame_id = self._world_frame_id
-        pose_msg.pose.position.x = float(root_position_xyz[0])
-        pose_msg.pose.position.y = float(root_position_xyz[1])
-        pose_msg.pose.position.z = float(root_position_xyz[2])
-        pose_msg.pose.orientation.w = float(root_orientation_wxyz[0])
-        pose_msg.pose.orientation.x = float(root_orientation_wxyz[1])
-        pose_msg.pose.orientation.y = float(root_orientation_wxyz[2])
-        pose_msg.pose.orientation.z = float(root_orientation_wxyz[3])
+        pose_msg.pose.position.x = gt_position_xyz[0]
+        pose_msg.pose.position.y = gt_position_xyz[1]
+        pose_msg.pose.position.z = gt_position_xyz[2]
+        pose_msg.pose.orientation.w = gt_orientation_wxyz[0]
+        pose_msg.pose.orientation.x = gt_orientation_wxyz[1]
+        pose_msg.pose.orientation.y = gt_orientation_wxyz[2]
+        pose_msg.pose.orientation.z = gt_orientation_wxyz[3]
         self._path_gt_poses.append(pose_msg)
         if len(self._path_gt_poses) > self._path_gt_max_poses:
             self._path_gt_poses = self._path_gt_poses[-self._path_gt_max_poses :]
@@ -433,9 +617,136 @@ class Ros2RobotStatePublisher:
         path_msg.poses = list(self._path_gt_poses)
         self._path_gt_pub.publish(path_msg)
 
+        gt_odom = self._odom_type()
+        gt_odom.header.stamp = stamp
+        gt_odom.header.frame_id = self._world_frame_id
+        gt_odom.child_frame_id = self._gt_child_frame_id
+        gt_odom.pose.pose = pose_msg.pose
+        self._gt_odom_pub.publish(gt_odom)
+
+        self._write_diagnostics(timestamp_s, gt_odom)
+
         self._rclpy.spin_once(self._node, timeout_sec=0.0)
 
+    def _on_lio_odom(self, msg) -> None:
+        self._latest_lio_odom = msg
+
+    def _on_lio_map_odom(self, msg) -> None:
+        self._latest_lio_map_odom = msg
+
+    def _write_diagnostics(self, timestamp_s: float, gt_odom) -> None:
+        if self._diagnostics_writer is None:
+            return
+
+        def pose_xyz(msg):
+            if msg is None:
+                return ("", "", "")
+            position = msg.pose.pose.position
+            return (position.x, position.y, position.z)
+
+        def velocity_xyz(msg):
+            if msg is None:
+                return ("", "", "")
+            velocity = msg.twist.twist.linear
+            return (velocity.x, velocity.y, velocity.z)
+
+        gt_pose = gt_odom.pose.pose
+        local_xyz = pose_xyz(self._latest_lio_odom)
+        map_xyz = pose_xyz(self._latest_lio_map_odom)
+        global_error = ""
+        if self._latest_lio_map_odom is not None:
+            global_error = sum(
+                (map_xyz[index] - (gt_pose.position.x, gt_pose.position.y, gt_pose.position.z)[index]) ** 2
+                for index in range(3)
+            ) ** 0.5
+        self._diagnostics_writer.writerow(
+            [
+                timestamp_s,
+                gt_pose.position.x, gt_pose.position.y, gt_pose.position.z,
+                gt_pose.orientation.x, gt_pose.orientation.y,
+                gt_pose.orientation.z, gt_pose.orientation.w,
+                *local_xyz,
+                *velocity_xyz(self._latest_lio_odom),
+                *map_xyz,
+                global_error,
+            ]
+        )
+        if self._diagnostics_file is not None and (
+            self._last_diagnostics_flush_s < 0.0
+            or timestamp_s - self._last_diagnostics_flush_s >= 1.0
+        ):
+            self._diagnostics_file.flush()
+            self._last_diagnostics_flush_s = timestamp_s
+
+    def _path_pose(self, position, orientation_wxyz, reference_orientation_wxyz=None):
+        position = tuple(float(value) for value in position)
+        orientation = self._normalize_quaternion(tuple(float(value) for value in orientation_wxyz))
+        reference_orientation = self._normalize_quaternion(
+            tuple(float(value) for value in (
+                reference_orientation_wxyz
+                if reference_orientation_wxyz is not None
+                else orientation_wxyz
+            ))
+        )
+        if not self._relative_to_initial_pose:
+            return position, orientation
+        if self._initial_root_position is None:
+            self._initial_root_position = position
+            # The tracked target can be an upside-down lidar_link. Align only
+            # initial heading with map: cancelling the robot's initial roll or
+            # pitch would disagree with gravity-aligned LIO coordinates.
+            self._initial_root_orientation = self._yaw_only_quaternion(reference_orientation)
+
+        initial_inverse = self._quaternion_conjugate(self._initial_root_orientation)
+        delta = tuple(position[index] - self._initial_root_position[index] for index in range(3))
+        relative_position = self._rotate_vector(initial_inverse, delta)
+        relative_orientation = self._normalize_quaternion(
+            self._quaternion_multiply(initial_inverse, orientation)
+        )
+        return relative_position, relative_orientation
+
+    @staticmethod
+    def _normalize_quaternion(quaternion):
+        norm = sum(value * value for value in quaternion) ** 0.5
+        if norm <= 1.0e-12:
+            return (1.0, 0.0, 0.0, 0.0)
+        return tuple(value / norm for value in quaternion)
+
+    @staticmethod
+    def _yaw_only_quaternion(quaternion):
+        w, x, y, z = quaternion
+        yaw = math.atan2(2.0 * (w * z + x * y), 1.0 - 2.0 * (y * y + z * z))
+        return (math.cos(0.5 * yaw), 0.0, 0.0, math.sin(0.5 * yaw))
+
+    @staticmethod
+    def _quaternion_conjugate(quaternion):
+        w, x, y, z = quaternion
+        return (w, -x, -y, -z)
+
+    @staticmethod
+    def _quaternion_multiply(first, second):
+        aw, ax, ay, az = first
+        bw, bx, by, bz = second
+        return (
+            aw * bw - ax * bx - ay * by - az * bz,
+            aw * bx + ax * bw + ay * bz - az * by,
+            aw * by - ax * bz + ay * bw + az * bx,
+            aw * bz + ax * by - ay * bx + az * bw,
+        )
+
+    @classmethod
+    def _rotate_vector(cls, quaternion, vector):
+        rotated = cls._quaternion_multiply(
+            cls._quaternion_multiply(quaternion, (0.0, *vector)),
+            cls._quaternion_conjugate(quaternion),
+        )
+        return rotated[1:]
+
     def close(self) -> None:
+        if self._diagnostics_file is not None:
+            self._diagnostics_file.flush()
+            self._diagnostics_file.close()
+            self._diagnostics_file = None
         if self._node is not None:
             self._node.destroy_node()
             self._node = None
@@ -566,11 +877,13 @@ class Ros2CommandUserBridge:
         node_name: str = "isaac_command_user_bridge",
         odom_frame_id: str = "odom",
         child_frame_id: str = DEFAULT_BASE_FRAME_ID,
+        cmd_vel_topic: str = "/nav2/cmd_vel",
     ):
         import math
         import numpy as np
         import rclpy
         from builtin_interfaces.msg import Time
+        from geometry_msgs.msg import Twist
         from rclpy.qos import QoSDurabilityPolicy, QoSHistoryPolicy, QoSProfile, QoSReliabilityPolicy
         CommandUser = _import_ros2_command_user_type()
 
@@ -604,6 +917,11 @@ class Ros2CommandUserBridge:
         self._node = rclpy.create_node(node_name)
         self._publisher = self._node.create_publisher(CommandUser, topic_name, qos)
         self._subscription = self._node.create_subscription(CommandUser, topic_name, self._on_command_user, qos)
+        self._cmd_vel_subscription = None
+        if cmd_vel_topic:
+            self._cmd_vel_subscription = self._node.create_subscription(
+                Twist, cmd_vel_topic, self._on_cmd_vel, qos
+            )
 
     @property
     def received_count(self) -> int:
@@ -680,6 +998,29 @@ class Ros2CommandUserBridge:
             "z": float(msg.odom.pose.pose.position.z),
             "height": float(msg.odom.pose.pose.position.z),
             "base_height": float(msg.odom.pose.pose.position.z),
+        }
+        for i in range(self._command_dim):
+            axis_name = self._axis_names[i].lower() if i < len(self._axis_names) else ""
+            command[i] = values.get(axis_name, 0.0)
+        self._latest_command = command
+        self._received_count += 1
+
+    def _on_cmd_vel(self, msg) -> None:
+        command = self._np.zeros(self._command_dim, dtype=self._np.float32)
+        values = {
+            "lin_vel_x": float(msg.linear.x),
+            "x": float(msg.linear.x),
+            "vx": float(msg.linear.x),
+            "vel_x": float(msg.linear.x),
+            "lin_vel_y": float(msg.linear.y),
+            "y": float(msg.linear.y),
+            "vy": float(msg.linear.y),
+            "vel_y": float(msg.linear.y),
+            "ang_vel_z": float(msg.angular.z),
+            "yaw": float(msg.angular.z),
+            "wz": float(msg.angular.z),
+            "omega_z": float(msg.angular.z),
+            "yaw_rate": float(msg.angular.z),
         }
         for i in range(self._command_dim):
             axis_name = self._axis_names[i].lower() if i < len(self._axis_names) else ""
@@ -1067,11 +1408,17 @@ def create_imu_ros_graph(
     graph_path: str = DEFAULT_IMU_GRAPH_PATH,
     topic_name: str = DEFAULT_IMU_TOPIC,
     frame_id: str = DEFAULT_IMU_FRAME_ID,
+    derive_angular_velocity: bool = False,
 ) -> Ros2ImuPublisher:
     """Create a ROS 2 publisher for IMU data updated from Python."""
 
     node_name = graph_path.strip("/").lower() or "isaac_imu_bridge"
-    return Ros2ImuPublisher(topic_name=topic_name, frame_id=frame_id, node_name=node_name)
+    return Ros2ImuPublisher(
+        topic_name=topic_name,
+        frame_id=frame_id,
+        node_name=node_name,
+        derive_angular_velocity=derive_angular_velocity,
+    )
 
 
 def create_clock_ros_graph(
@@ -1117,6 +1464,12 @@ def create_time_ros_graph(topic_name: str = DEFAULT_TIME_TOPIC) -> Ros2TimePubli
     return Ros2TimePublisher(topic_name)
 
 
+def create_clock_publisher(topic_name: str = "/clock") -> Ros2ClockPublisher:
+    """Create the rclpy publisher that owns simulation /clock."""
+
+    return Ros2ClockPublisher(topic_name)
+
+
 def create_front_camera_publisher(
     rgb_topic: str = "/f4/front_camera/rgb/image_raw",
     depth_topic: str = DEFAULT_FRONT_DEPTH_TOPIC,
@@ -1139,6 +1492,7 @@ def create_command_user_bridge(
     axis_names: list[str] | None = None,
     odom_frame_id: str = "odom",
     child_frame_id: str = DEFAULT_BASE_FRAME_ID,
+    cmd_vel_topic: str = "/nav2/cmd_vel",
 ) -> Ros2CommandUserBridge:
     """Create a ROS 2 CommandUser publisher/subscriber bridge."""
 
@@ -1148,6 +1502,7 @@ def create_command_user_bridge(
         axis_names=axis_names,
         odom_frame_id=odom_frame_id,
         child_frame_id=child_frame_id,
+        cmd_vel_topic=cmd_vel_topic,
     )
 
 
@@ -1245,7 +1600,12 @@ def create_robot_state_publisher(
     world_frame_id: str = DEFAULT_WORLD_FRAME_ID,
     base_frame_id: str = DEFAULT_BASE_FRAME_ID,
     path_gt_topic: str = DEFAULT_PATH_GT_TOPIC,
+    gt_odom_topic: str = "/gt/lidar_odom",
+    gt_child_frame_id: str = DEFAULT_MID360_FRAME_ID,
     path_gt_max_poses: int = 5000,
+    publish_root_tf: bool = True,
+    relative_to_initial_pose: bool = False,
+    diagnostics_csv_path: str = "",
 ) -> Ros2RobotStatePublisher:
     """Create a ROS 2 publisher for JointState, root TF, and ground-truth path."""
 
@@ -1254,5 +1614,10 @@ def create_robot_state_publisher(
         world_frame_id=world_frame_id,
         base_frame_id=base_frame_id,
         path_gt_topic=path_gt_topic,
+        gt_odom_topic=gt_odom_topic,
+        gt_child_frame_id=gt_child_frame_id,
         path_gt_max_poses=path_gt_max_poses,
+        publish_root_tf=publish_root_tf,
+        relative_to_initial_pose=relative_to_initial_pose,
+        diagnostics_csv_path=diagnostics_csv_path,
     )

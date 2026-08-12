@@ -1,0 +1,17 @@
+third_party/Livox-SDK2/
+third_party/livox_ros_driver2/package.xml
+
+# Local build artifacts
+build/
+install/
+log/
+dist/
+.deps/
+
+# Python cache artifacts
+__pycache__/
+**/__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.pytest_cache/

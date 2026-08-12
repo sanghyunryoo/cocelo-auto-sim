@@ -1,0 +1,37 @@
+# Python bytecode and interpreter caches
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Python packaging and test/tool caches
+*.egg-info/
+.eggs/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+dist/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# ROS 2 / colcon build artifacts
+build/
+install/
+log/
+
+# Native build artifacts
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+compile_commands.json
+
+# Runtime and editor leftovers
+*.swp
+*.swo
+*~
+.DS_Store

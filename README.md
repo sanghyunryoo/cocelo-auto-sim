@@ -43,6 +43,7 @@ GUI 없이 바로 실행하려면 다음 스크립트를 사용할 수 있습니
 | ROS 2 bridge | joint states, TF, camera, IMU, LiDAR, path, command topic 발행 |
 | robot_state_publisher | URDF 기반 RobotModel/TF 시각화 지원 |
 | RViz2 | ROS 2 토픽과 로봇 상태 시각화 |
+| Super-LIO / Nav2 | `map -> odom` 위치 추정, 동적 점유격자 지도와 자율주행 |
 | ONNX policy runtime | `weights/example_policy.onnx` 기반 정책 추론 |
 
 ## Docker로 실행
@@ -223,9 +224,18 @@ GUI에서 실행하면 전역 키보드 입력을 사용해 로봇을 조종합�
 | `/f4/imu` | Base IMU |
 | `/f4/lidar/points` | LiDAR PointCloud2 |
 | `/f4/lidar/imu` | LiDAR IMU |
+| `/lio/cloud_world` | `map` 좌표계로 정합된 SLAM PointCloud2 |
+| `/lio/cloud_sensor` | Nav2 clearing용 전체 LiDAR 좌표계 PointCloud2 |
+| `/lio/cloud_sensor_obstacles` | scan별 지면 평면을 제거한 Nav2 marking 전용 PointCloud2 |
+| `/map` | 관측 범위와 함께 확장되는 `nav_msgs/OccupancyGrid` (`-1` unknown, `0` free, `100` occupied) |
+| `/global_costmap/costmap` | `/map` + 실시간 장애물 + inflation을 합성한 Nav2 global costmap |
+| `/local_costmap/costmap` | 로봇 주변에서 이동하는 Nav2 local rolling costmap |
+| `/navigate_to_pose` | RViz2 Navigation 2 패널과 터미널에서 사용하는 Nav2 goal action |
 | `/control_command/user_odom` | `core/msg/CommandUser` 기반 사용자 명령 |
 
-기본 TF 구조는 `world -> f4/base_link`이며, URDF 링크에는 `f4/` prefix가 붙습니다.
+기본 주행 TF 구조는 `map -> odom -> f4/slam_imu_link -> f4/base_link`이며, URDF 센서/관절 링크에는 `f4/` prefix가 붙습니다. RViz2의 `Dynamic Occupancy Map (white)`는 관측된 free/occupied 영역을 표시하고, Global/Local Costmap은 그 위에 장애물 비용과 inflation을 겹쳐 표시합니다.
+
+이 구성에서 Super-LIO는 자세와 3D 정합 cloud를 만들고, `live_occupancy_mapper`가 scan별 지면 평면을 제거한 뒤 2D `/map`으로 투영합니다. Nav2 global costmap은 이 누적 `/map`을 StaticLayer로 사용하고, 실시간 cloud는 별도로 장애물 marking과 ray clearing에 사용합니다. 따라서 SLAM map과 PointCloud2 중 하나만 선택하는 구조가 아니라, 누적 지도는 전역 경로 계획에, 현재 센서 관측은 동적 장애물과 clearing에 함께 사용됩니다.
 
 ## 설치
 

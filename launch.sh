@@ -118,7 +118,7 @@ class FlamingoLauncher:
             "camera_width": tk.StringVar(value="320"),
             "camera_height": tk.StringVar(value="240"),
             "imu_rate": tk.StringVar(value="100"),
-            "lidar_rate": tk.StringVar(value="5"),
+            "lidar_rate": tk.StringVar(value="10"),
             "perf_report_interval": tk.StringVar(value="2"),
             "path_gt_topic": tk.StringVar(value="/path_gt"),
             "policy_onnx_path": tk.StringVar(value=default_onnx_path()),
@@ -358,7 +358,7 @@ class FlamingoLauncher:
 
         footer = ttk.Frame(root, style="Root.TFrame")
         footer.grid(row=3, column=0, columnspan=2, sticky="ew", pady=(10, 0))
-        ttk.Label(footer, text="Process supervision: enabled   |   TF root: world -> f4/base_link   |   Path: /path_gt", style="Sub.TLabel").pack(side="left")
+        ttk.Label(footer, text="Process supervision: enabled   |   TF: map -> odom -> f4/base_link   |   Paths: GT /path_gt, SLAM /path_slam", style="Sub.TLabel").pack(side="left")
 
     def _card(self, parent, title, subtitle):
         outer = tk.Frame(parent, bg=COLORS["panel2"], highlightbackground=COLORS["border"], highlightthickness=1)
