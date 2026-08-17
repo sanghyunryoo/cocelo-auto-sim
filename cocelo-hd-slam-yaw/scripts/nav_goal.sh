@@ -31,5 +31,12 @@ print(math.sin(yaw * 0.5), math.cos(yaw * 0.5))
 PY
 )
 
-ros2 action send_goal /navigate_to_pose nav2_msgs/action/NavigateToPose \
-  "{pose: {header: {frame_id: map}, pose: {position: {x: $1, y: $2, z: 0.0}, orientation: {z: ${qz}, w: ${qw}}}}}"
+action_output="$(
+  ros2 action send_goal /navigate_to_pose nav2_msgs/action/NavigateToPose \
+    "{pose: {header: {frame_id: map}, pose: {position: {x: $1, y: $2, z: 0.0}, orientation: {z: ${qz}, w: ${qw}}}}}"
+)"
+printf '%s\n' "${action_output}"
+
+if [[ "${action_output}" != *"Goal finished with status: SUCCEEDED"* ]]; then
+  exit 1
+fi

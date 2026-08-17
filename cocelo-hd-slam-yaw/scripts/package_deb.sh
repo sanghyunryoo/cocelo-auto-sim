@@ -16,8 +16,9 @@ Options:
   --no-strip              Keep debug symbols in packaged ELF files.
   -h, --help              Show this help.
 
-The package contains autonomy_light, livox_ros_driver2, super_lio, basic, and
-the Livox-SDK2 shared library. The target must already provide the same Ubuntu
+The package contains core command interfaces, autonomy_light, Nav2 bringup,
+livox_ros_driver2, super_lio, basic, and the Livox-SDK2 shared library. The
+target must already provide the same Ubuntu
 and ROS 2 distribution used to build the package.
 EOF
 }
@@ -128,10 +129,10 @@ DEBIAN_VERSION="${VERSION}-${REVISION}+${ROS_DISTRO_NAME}${UBUNTU_VERSION}"
 if [[ "${SKIP_BUILD}" != "true" ]]; then
   # Packaging rebuilds application artifacts but must not mutate apt packages.
   "${REPO_DIR}/build.sh" --skip-apt --ros-distro "${ROS_DISTRO_NAME}" \
-    --packages livox_ros_driver2 super_lio autonomy_light
+    --packages core livox_ros_driver2 super_lio autonomy_light
 fi
 
-for prefix in basic livox_ros_driver2 super_lio autonomy_light; do
+for prefix in basic core livox_ros_driver2 super_lio autonomy_light; do
   [[ -d "${INSTALL_ROOT}/${prefix}" ]] || {
     echo "error: install tree is missing ${INSTALL_ROOT}/${prefix}" >&2
     echo "hint: omit --skip-build or run build.sh first." >&2
@@ -233,10 +234,19 @@ Section: robotics
 Priority: optional
 Architecture: ${ARCHITECTURE}
 Maintainer: autonomy_light maintainer <todo@example.com>
-Depends: bash, iproute2, python3, python3-yaml
-Description: Livox and Super-LIO front-wall angle runtime
- Source-free runtime bundle for autonomy_light, Livox ROS Driver2, and
- Super-LIO. ROS 2 ${ROS_DISTRO_NAME} must already be installed under
+Depends: bash, iproute2, python3, python3-yaml,
+ ros-${ROS_DISTRO_NAME}-nav2-behaviors,
+ ros-${ROS_DISTRO_NAME}-nav2-bt-navigator,
+ ros-${ROS_DISTRO_NAME}-nav2-controller,
+ ros-${ROS_DISTRO_NAME}-nav2-lifecycle-manager,
+ ros-${ROS_DISTRO_NAME}-nav2-navfn-planner,
+ ros-${ROS_DISTRO_NAME}-nav2-planner,
+ ros-${ROS_DISTRO_NAME}-nav2-regulated-pure-pursuit-controller,
+ ros-${ROS_DISTRO_NAME}-nav2-rviz-plugins,
+ ros-${ROS_DISTRO_NAME}-nav2-velocity-smoother
+Description: Livox, Super-LIO, Nav2, and CommandUser autonomy runtime
+ Source-free runtime bundle for the core command contract, autonomy_light,
+ Livox ROS Driver2, Super-LIO, and Nav2 bringup. ROS 2 ${ROS_DISTRO_NAME} must be installed under
  /opt/ros/${ROS_DISTRO_NAME} on the target system.
 EOF
 

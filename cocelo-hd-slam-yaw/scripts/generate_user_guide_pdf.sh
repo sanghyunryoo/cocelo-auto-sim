@@ -25,10 +25,6 @@ while [[ $# -gt 0 ]]; do
 done
 
 [[ -f "${SOURCE_HTML}" ]] || { echo "error: manual source missing: ${SOURCE_HTML}" >&2; exit 1; }
-command -v libreoffice >/dev/null || {
-  echo "error: LibreOffice is required to create the PDF" >&2
-  exit 1
-}
 
 OUTPUT_DIR="$(dirname -- "${OUTPUT_PDF}")"
 OUTPUT_NAME="$(basename -- "${OUTPUT_PDF}")"
@@ -38,9 +34,19 @@ cleanup() {
 }
 trap cleanup EXIT
 
-mkdir -p "${OUTPUT_DIR}"
-libreoffice --headless --convert-to pdf --outdir "${TEMP_DIR}" "${SOURCE_HTML}" >/dev/null
 GENERATED_PDF="${TEMP_DIR}/$(basename -- "${SOURCE_HTML%.html}").pdf"
-[[ -f "${GENERATED_PDF}" ]] || { echo "error: LibreOffice did not create a PDF" >&2; exit 1; }
+mkdir -p "${OUTPUT_DIR}"
+if command -v libreoffice >/dev/null; then
+  libreoffice --headless --convert-to pdf --outdir "${TEMP_DIR}" "${SOURCE_HTML}" >/dev/null
+else
+  CHROME_BIN="$(command -v google-chrome || command -v chromium || true)"
+  [[ -n "${CHROME_BIN}" ]] || {
+    echo "error: LibreOffice, Google Chrome, or Chromium is required to create the PDF" >&2
+    exit 1
+  }
+  "${CHROME_BIN}" --headless --disable-gpu --no-sandbox \
+    --print-to-pdf="${GENERATED_PDF}" "file://${SOURCE_HTML}" >/dev/null 2>&1
+fi
+[[ -f "${GENERATED_PDF}" ]] || { echo "error: PDF renderer did not create a PDF" >&2; exit 1; }
 install -m 0644 "${GENERATED_PDF}" "${OUTPUT_DIR}/${OUTPUT_NAME}"
 echo "Created: ${OUTPUT_DIR}/${OUTPUT_NAME}"

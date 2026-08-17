@@ -14,7 +14,7 @@ Options:
   --clean             Remove this workspace's build/install/log first.
   --setup-only        Install runtime/build dependencies only; do not build.
   --sim               Build a simulation-only stack without the physical Livox SDK node.
-  --packages PKGS     Packages to build. Default: livox_ros_driver2 super_lio autonomy_light.
+  --packages PKGS     Packages to build. Default: core livox_ros_driver2 super_lio autonomy_light.
   --ros-distro NAME   ROS distro. Default: ROS_DISTRO or humble.
   -h, --help          Show this help.
 EOF
@@ -28,7 +28,7 @@ SKIP_SDK="false"
 CLEAN="false"
 SETUP_ONLY="false"
 SIM_ONLY="false"
-PACKAGES=(livox_ros_driver2 super_lio autonomy_light)
+PACKAGES=(core livox_ros_driver2 super_lio autonomy_light)
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -125,6 +125,7 @@ echo "Building packages: ${PACKAGES[*]}"
 colcon build --packages-up-to "${PACKAGES[@]}" \
   --base-paths \
     "${WORKSPACE_DIR}" \
+    "${WORKSPACE_DIR}/interfaces" \
     "${WORKSPACE_DIR}/third_party/livox_ros_driver2" \
     "${WORKSPACE_DIR}/third_party/super_lio_ros2" \
   --cmake-args \

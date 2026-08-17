@@ -264,7 +264,9 @@ class FrontierValidation(Node):
             if grid[row, column] != 0:
                 return False
             cost = self._cost_at(x, y)
-            if cost == 255 or cost >= 100:
+            # /global_costmap/costmap is nav_msgs/OccupancyGrid: unknown is
+            # represented as -1 (not Costmap2D's internal uint8 value 255).
+            if cost < 0 or cost >= 100:
                 return False
         return True
 
@@ -323,12 +325,11 @@ class FrontierValidation(Node):
             if np.any(grid[r0:r1, c0:c1] >= 50):
                 rejected_map_clearance += 1
                 continue
-            # A just-expanded StaticLayer can still report this boundary cell
-            # as unknown (-1) for one update cycle. Navfn is configured with
-            # allow_unknown=true and the source /map cell itself is free, so
-            # accepting -1 here is both safe and avoids starving exploration.
+            # A just-expanded StaticLayer can report this boundary cell as
+            # unknown (-1) for one update cycle. Wait for the costmap update;
+            # the validator must not select an unplannable test goal.
             cost = self._cost_at(x, y)
-            if cost == 255 or cost >= 80:
+            if cost < 0 or cost >= 80:
                 rejected_cost += 1
                 continue
             if not self._line_is_free(robot_x, robot_y, x, y):
@@ -367,7 +368,7 @@ class FrontierValidation(Node):
                 if np.any(grid[r0:r1, c0:c1] >= 50):
                     continue
                 cost = self._cost_at(x, y)
-                if cost == 255 or cost >= 80:
+                if cost < 0 or cost >= 80:
                     continue
                 if not self._line_is_free(robot_x, robot_y, x, y):
                     continue

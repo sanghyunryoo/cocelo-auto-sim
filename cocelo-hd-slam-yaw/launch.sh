@@ -17,6 +17,7 @@ Usage: ./launch.sh [--real|--sim] [--no-drivers] [options]
   --nav2                  Start live-cloud Nav2 navigation (default).
   --no-nav2               Run SLAM without Nav2.
   --nav2-config FILE      Override nav2_live.yaml.
+  --command-user-topic T  CommandUser output topic (default: /control_command/user_odom).
   --vis-rate HZ           Set status-table output frequency (default: 2.0 Hz).
   --ros-distro NAME       ROS distribution (default: $ROS_DISTRO or humble).
 EOF
@@ -40,6 +41,7 @@ ENABLE_NAV2="${AUTONOMY_LIGHT_ENABLE_NAV2:-true}"
 VIS_RATE="2.0"
 CONFIG_FILE="${AUTONOMY_LIGHT_CONFIG:-${PACKAGE_CONFIG_DIR}/autonomy_light.yaml}"
 NAV2_CONFIG_FILE="${AUTONOMY_LIGHT_NAV2_CONFIG:-${PACKAGE_CONFIG_DIR}/nav2_live.yaml}"
+COMMAND_USER_TOPIC="${AUTONOMY_LIGHT_COMMAND_USER_TOPIC:-/control_command/user_odom}"
 RAW_LIDAR_TOPIC=""
 RAW_IMU_TOPIC=""
 SIM_TOPIC_PREFIX="${AUTONOMY_LIGHT_SIM_TOPIC_PREFIX:-/f4}"
@@ -57,6 +59,8 @@ while [[ $# -gt 0 ]]; do
     --no-nav2) ENABLE_NAV2="false"; shift ;;
     --nav2-config) NAV2_CONFIG_FILE="${2:?--nav2-config requires a file}"; shift 2 ;;
     --nav2-config=*) NAV2_CONFIG_FILE="${1#*=}"; shift ;;
+    --command-user-topic) COMMAND_USER_TOPIC="${2:?--command-user-topic requires a topic}"; shift 2 ;;
+    --command-user-topic=*) COMMAND_USER_TOPIC="${1#*=}"; shift ;;
     --vis-rate) VIS_RATE="${2:?--vis-rate requires a positive frequency}"; shift 2 ;;
     --vis-rate=*) VIS_RATE="${1#*=}"; shift ;;
     --config) CONFIG_FILE="${2:?--config requires a file}"; shift 2 ;;
@@ -109,10 +113,12 @@ WALL_RUNTIME_CONFIG="${RUNTIME_DIR}/front_wall_angle_runtime.yaml"
 LIVOX_CONFIG="${RUNTIME_DIR}/livox_driver.json"
 STATIC_TF="${RUNTIME_DIR}/static_tf.txt"
 RUNTIME_INFO="${RUNTIME_DIR}/runtime.env"
+NAV2_RUNTIME_CONFIG="${RUNTIME_DIR}/nav2_live.yaml"
 
 /usr/bin/python3 - "${CONFIG_FILE}" "${PACKAGE_CONFIG_DIR}/super_lio_mid360.yaml" \
   "${LIO_CONFIG}" "${WALL_INIT_CONFIG}" "${WALL_RUNTIME_CONFIG}" "${LIVOX_CONFIG}" "${STATIC_TF}" "${RUNTIME_INFO}" \
-  "${MODE}" "${RAW_LIDAR_TOPIC}" "${RAW_IMU_TOPIC}" "${SIM_TOPIC_PREFIX}" <<'PY'
+  "${NAV2_CONFIG_FILE}" "${NAV2_RUNTIME_CONFIG}" \
+  "${MODE}" "${RAW_LIDAR_TOPIC}" "${RAW_IMU_TOPIC}" "${SIM_TOPIC_PREFIX}" "${COMMAND_USER_TOPIC}" <<'PY'
 import ipaddress
 import json
 import math
@@ -121,8 +127,8 @@ import sys
 import yaml
 
 (source_path, lio_default, lio_target, wall_init_target, wall_runtime_target,
- livox_target, tf_target, runtime_target, mode, lidar_override, imu_override,
- sim_prefix) = sys.argv[1:13]
+ livox_target, tf_target, runtime_target, nav2_source, nav2_target, mode,
+ lidar_override, imu_override, sim_prefix, command_user_topic) = sys.argv[1:16]
 
 def read_yaml(path):
     with open(path, encoding="utf-8") as stream:
@@ -312,6 +318,31 @@ wall_runtime_params = dict(wall_params)
 # SLAM instance must begin publishing immediately after its clean restart.
 wall_runtime_params["require_initial_alignment"] = False
 
+# Preserve every validated Nav2 tuning value and rewrite only deployment
+# identities. Simulation uses f4/* frames while the physical stack uses the
+# unprefixed calibrated frames from autonomy_light.yaml.
+nav2 = read_yaml(nav2_source)
+nav2_map_frame = simulation.get("map_frame", root.get("map_frame", "map"))
+nav2_odom_frame = simulation.get("odom_frame", root.get("odom_frame", "odom"))
+nav2_base_frame = simulation.get("target_frame", root.get("target_frame", "base_link"))
+nav2_lidar_frame = simulation.get("lidar_frame", root.get("lidar_frame", "lidar_link"))
+params(nav2, "live_occupancy_mapper")["map_frame"] = nav2_map_frame
+params(nav2, "live_occupancy_mapper")["sensor_frame"] = nav2_lidar_frame
+params(nav2, "nav2_command_user_bridge")["output_command_topic"] = required_text(
+    command_user_topic, "command_user_topic")
+params(nav2, "nav2_command_user_bridge")["odom_frame"] = nav2_odom_frame
+params(nav2, "nav2_command_user_bridge")["child_frame"] = nav2_base_frame
+params(nav2["local_costmap"], "local_costmap")["global_frame"] = nav2_odom_frame
+params(nav2["local_costmap"], "local_costmap")["robot_base_frame"] = nav2_base_frame
+params(nav2["global_costmap"], "global_costmap")["global_frame"] = nav2_map_frame
+params(nav2["global_costmap"], "global_costmap")["robot_base_frame"] = nav2_base_frame
+params(nav2, "behavior_server")["local_frame"] = nav2_odom_frame
+params(nav2, "behavior_server")["global_frame"] = nav2_map_frame
+params(nav2, "behavior_server")["robot_base_frame"] = nav2_base_frame
+params(nav2, "bt_navigator")["global_frame"] = nav2_map_frame
+params(nav2, "bt_navigator")["robot_base_frame"] = nav2_base_frame
+params(nav2, "bt_navigator")["odom_topic"] = "/lio/odom"
+
 lidar_ports = {f"{name}_port": port for name, port in livox_lidar_ports.items()}
 host_ports = {f"{name}_port": port for name, port in livox_host_ports.items()}
 if livox_model == "mid360":
@@ -359,6 +390,8 @@ with open(wall_init_target, "w", encoding="utf-8") as stream:
 with open(wall_runtime_target, "w", encoding="utf-8") as stream:
     yaml.safe_dump({"front_wall_angle_estimator": {"ros__parameters": wall_runtime_params}}, stream,
                    default_flow_style=False, sort_keys=False)
+with open(nav2_target, "w", encoding="utf-8") as stream:
+    yaml.safe_dump(nav2, stream, default_flow_style=False, sort_keys=False)
 with open(livox_target, "w", encoding="utf-8") as stream:
     json.dump(livox_driver_config, stream, indent=2)
     stream.write("\n")
@@ -591,7 +624,7 @@ if [[ "${ENABLE_NAV2}" == "true" ]]; then
   }
   USE_SIM_TIME="false"
   [[ "${MODE}" == "sim" ]] && USE_SIM_TIME="true"
-  start "Nav2 navigation" "${NAV2_WAIT_SCRIPT}" "${NAV2_CONFIG_FILE}" "${USE_SIM_TIME}" /lio/odom 120
+  start "Nav2 navigation" "${NAV2_WAIT_SCRIPT}" "${NAV2_RUNTIME_CONFIG}" "${USE_SIM_TIME}" /lio/odom 120
   NAV2_PID="${PIDS[$((${#PIDS[@]} - 1))]}"
   verify_running "${NAV2_PID}"
 fi

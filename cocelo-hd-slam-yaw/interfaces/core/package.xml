@@ -1,9 +1,9 @@
 <?xml version="1.0"?>
 <package format="3">
   <name>core</name>
-  <version>0.0.0</version>
-  <description>Custom command user messages.</description>
-  <maintainer email="root@localhost.localdomain">root</maintainer>
+  <version>0.1.0</version>
+  <description>Shared robot command interfaces used by autonomy and locomotion.</description>
+  <maintainer email="todo@example.com">cocelo autonomy maintainer</maintainer>
   <license>Apache-2.0</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>

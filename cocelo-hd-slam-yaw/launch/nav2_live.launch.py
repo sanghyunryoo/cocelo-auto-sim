@@ -48,6 +48,13 @@ def generate_launch_description():
                 ],
             ),
             Node(
+                package="autonomy_light",
+                executable="nav2_command_user_bridge",
+                name="nav2_command_user_bridge",
+                output="screen",
+                parameters=common_parameters,
+            ),
+            Node(
                 package="nav2_planner",
                 executable="planner_server",
                 name="planner_server",

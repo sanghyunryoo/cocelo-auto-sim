@@ -1,7 +1,9 @@
-# autonomy_light
+# Cocelo HD SLAM + Nav2 autonomy stack
 
-This workspace runs Livox + Super-LIO in real time and publishes the angle and
-range of the nearest qualified front wall/vertical obstacle. There is no
+This portable workspace runs Livox + Super-LIO + live occupancy mapping +
+Nav2 and exposes one actuator-facing `core/msg/CommandUser` command contract.
+It also publishes the angle and range of the nearest qualified front
+wall/vertical obstacle. There is no
 elevation map, height-map bridge, D435 dependency, DDS height-map transport,
 saved-map relocation, or pre-mapping workflow.
 
@@ -121,9 +123,27 @@ can install a Jazzy Nav2 runtime without root access under `.deps`:
 ```
 
 Nav2 emits raw controller commands on `/nav2/cmd_vel_raw` and acceleration-
-limited `geometry_msgs/Twist` on `/nav2/cmd_vel`. The simulator subscribes to
-the latter directly. A hardware deployment should route the same final topic
-through its motor safety/mux layer.
+limited `geometry_msgs/Twist` on `/nav2/cmd_vel`. The package-owned
+`nav2_command_user_bridge` converts that final command to
+`core/msg/CommandUser` on `/control_command/user_odom`. Both the simulator and
+the physical locomotion controller consume this same CommandUser topic; they
+do not subscribe to Nav2 Twist directly. If Nav2 Twist becomes stale, the
+bridge publishes a zero command after 0.5 seconds.
+
+```text
+Nav2 controller -> velocity smoother -> /nav2/cmd_vel (internal Twist)
+                                      -> nav2_command_user_bridge
+                                      -> /control_command/user_odom
+                                         (core/msg/CommandUser)
+                                      -> simulator RL observation / hardware controller
+```
+
+The `interfaces/core` package is bundled in this workspace, so the exact
+CommandUser schema travels with the autonomy module. Deployment-specific frame
+names are rewritten at runtime only: simulation retains `f4/base_link` and
+`f4/lidar_link`, while `--real` uses the unprefixed calibrated frames from
+`config/autonomy_light.yaml`. All planner, controller, costmap, inflation, and
+velocity-smoother tuning remains shared in `config/nav2_live.yaml`.
 
 To view the exact wall-estimation ROI in RViz2, set its Fixed Frame to
 `base_link`, add a `PointCloud2` display, and select

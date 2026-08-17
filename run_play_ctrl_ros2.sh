@@ -39,6 +39,7 @@ ENABLE_NAV2="${ENABLE_NAV2:-$ENABLE_SLAM}"
 AUTO_BUILD_SLAM="${AUTO_BUILD_SLAM:-1}"
 AUTO_INSTALL_NAV2="${AUTO_INSTALL_NAV2:-1}"
 SLAM_ROOT="${SLAM_ROOT:-$PROJECT_ROOT/cocelo-hd-slam-yaw}"
+ROS_CORE_PACKAGE_ROOT="${ROS_CORE_PACKAGE_ROOT:-$SLAM_ROOT/interfaces/core}"
 SLAM_CONFIG="${SLAM_CONFIG:-$SLAM_ROOT/config/autonomy_light.yaml}"
 SLAM_PATH_TOPIC="${SLAM_PATH_TOPIC:-/path_slam}"
 ROBOT_NAMESPACE="${ROBOT_NAMESPACE:-/f4}"
@@ -67,7 +68,7 @@ ROS2_CAMERA_WIDTH="${ROS2_CAMERA_WIDTH:-320}"
 ROS2_CAMERA_HEIGHT="${ROS2_CAMERA_HEIGHT:-240}"
 ROS2_IMU_RATE="${ROS2_IMU_RATE:-100}"
 ROS2_LIDAR_RATE="${ROS2_LIDAR_RATE:-10}"
-ROS2_NAV_CMD_VEL_TOPIC="${ROS2_NAV_CMD_VEL_TOPIC:-/nav2/cmd_vel}"
+ROS2_COMMAND_USER_TOPIC="${ROS2_COMMAND_USER_TOPIC:-/control_command/user_odom}"
 ROS2_COMMAND_USER_PUBLISH_KEYBOARD="${ROS2_COMMAND_USER_PUBLISH_KEYBOARD:-$([[ "$ENABLE_NAV2" == "1" ]] && printf 0 || printf 1)}"
 POLICY_ONNX_PATH="${POLICY_ONNX_PATH:-$PROJECT_ROOT/weights/example_policy.onnx}"
 HW_SHOULDER_KP="${HW_SHOULDER_KP:-35.0}"
@@ -193,8 +194,8 @@ ensure_core_msgs() {
         exit 1
     fi
 
-    if [[ ! -f "$ROS_WS_ROOT/src/core/package.xml" ]]; then
-        echo "[run_play_ctrl_ros2] missing bundled ROS 2 package: $ROS_WS_ROOT/src/core/package.xml" >&2
+    if [[ ! -f "$ROS_CORE_PACKAGE_ROOT/package.xml" ]]; then
+        echo "[run_play_ctrl_ros2] missing bundled ROS 2 package: $ROS_CORE_PACKAGE_ROOT/package.xml" >&2
         exit 1
     fi
 
@@ -213,7 +214,7 @@ ensure_core_msgs() {
         hash -r
 
         colcon --log-base "$ROS_WS_ROOT/log/$ROS_RUNTIME_ID" build \
-            --base-paths "$ROS_WS_ROOT/src" \
+            --base-paths "$ROS_CORE_PACKAGE_ROOT" \
             --build-base "$ROS_WS_ROOT/build/$ROS_RUNTIME_ID" \
             --install-base "$ROS_WS_INSTALL_BASE" \
             --packages-select core \
@@ -283,12 +284,15 @@ ensure_slam_workspace() {
     local wall_executable="$SLAM_ROOT/install/autonomy_light/lib/autonomy_light/front_wall_angle_estimator"
     local occupancy_executable="$SLAM_ROOT/install/autonomy_light/lib/autonomy_light/live_occupancy_mapper"
     local occupancy_source="$SLAM_ROOT/src/live_occupancy_mapper.cpp"
+    local command_bridge_executable="$SLAM_ROOT/install/autonomy_light/lib/autonomy_light/nav2_command_user_bridge"
+    local command_bridge_source="$SLAM_ROOT/src/nav2_command_user_bridge.cpp"
     local slam_build_required=0
     if [[ ! -x "$slam_executable" || ! -x "$wall_executable" ]]; then
         slam_build_required=1
     fi
     if [[ "$ENABLE_NAV2" == "1" ]] && \
-        { [[ ! -x "$occupancy_executable" ]] || [[ "$occupancy_source" -nt "$occupancy_executable" ]]; }; then
+        { [[ ! -x "$occupancy_executable" ]] || [[ "$occupancy_source" -nt "$occupancy_executable" ]] || \
+          [[ ! -x "$command_bridge_executable" ]] || [[ "$command_bridge_source" -nt "$command_bridge_executable" ]]; }; then
         slam_build_required=1
     fi
     if [[ "$slam_build_required" == "1" ]]; then
@@ -300,7 +304,8 @@ ensure_slam_workspace() {
         echo "[run_play_ctrl_ros2] building cocelo-hd-slam-yaw simulation stack"
         "$SLAM_ROOT/build.sh" --sim --skip-apt --ros-distro "$ROS_DISTRO"
         if [[ ! -x "$slam_executable" || ! -x "$wall_executable" ]] || \
-            { [[ "$ENABLE_NAV2" == "1" ]] && [[ ! -x "$occupancy_executable" ]]; }; then
+            { [[ "$ENABLE_NAV2" == "1" ]] && \
+              { [[ ! -x "$occupancy_executable" ]] || [[ ! -x "$command_bridge_executable" ]]; }; }; then
             echo "[run_play_ctrl_ros2] SLAM build completed without required executables" >&2
             exit 1
         fi
@@ -688,6 +693,7 @@ PY
                 --raw-lidar-topic "${ROBOT_NAMESPACE}/lidar/points" \
                 --raw-imu-topic "${ROBOT_NAMESPACE}/lidar/imu" \
                 --sim-topic-prefix "$ROBOT_NAMESPACE" \
+                --command-user-topic "$ROS2_COMMAND_USER_TOPIC" \
                 --no-lidar-static-tf \
                 "$([[ "$ENABLE_NAV2" == "1" ]] && printf '%s' --nav2 || printf '%s' --no-nav2)" \
                 --ros-distro "$ROS_DISTRO" &
@@ -801,9 +807,8 @@ python scripts/co_rl/play_ctrl.py \
     --ros2_mid360_imu_sensor lidar_imu \
     --enable_ros2_front_camera_imu False \
     --enable_ros2_command_user True \
-    --ros2_command_user_topic "/control_command/user_odom" \
+    --ros2_command_user_topic "$ROS2_COMMAND_USER_TOPIC" \
     --ros2_command_user_publish_keyboard "$ROS2_COMMAND_USER_PUBLISH_KEYBOARD" \
-    --ros2_nav_cmd_vel_topic "$ROS2_NAV_CMD_VEL_TOPIC" \
     "$@" < "$PLAY_CTRL_STDIN" &
 PLAY_CTRL_PID=$!
 wait "$PLAY_CTRL_PID"

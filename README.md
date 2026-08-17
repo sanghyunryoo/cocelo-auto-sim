@@ -231,11 +231,13 @@ GUI에서 실행하면 전역 키보드 입력을 사용해 로봇을 조종합�
 | `/global_costmap/costmap` | `/map` + 실시간 장애물 + inflation을 합성한 Nav2 global costmap |
 | `/local_costmap/costmap` | 로봇 주변에서 이동하는 Nav2 local rolling costmap |
 | `/navigate_to_pose` | RViz2 Navigation 2 패널과 터미널에서 사용하는 Nav2 goal action |
-| `/control_command/user_odom` | `core/msg/CommandUser` 기반 사용자 명령 |
+| `/control_command/user_odom` | Nav2의 최종 smoothed velocity를 변환한 `core/msg/CommandUser`; 시뮬레이터 RL observation과 실기 제어기의 공통 입력 |
 
 기본 주행 TF 구조는 `map -> odom -> f4/slam_imu_link -> f4/base_link`이며, URDF 센서/관절 링크에는 `f4/` prefix가 붙습니다. RViz2의 `Dynamic Occupancy Map (white)`는 관측된 free/occupied 영역을 표시하고, Global/Local Costmap은 그 위에 장애물 비용과 inflation을 겹쳐 표시합니다.
 
 이 구성에서 Super-LIO는 자세와 3D 정합 cloud를 만들고, `live_occupancy_mapper`가 scan별 지면 평면을 제거한 뒤 2D `/map`으로 투영합니다. Nav2 global costmap은 이 누적 `/map`을 StaticLayer로 사용하고, 실시간 cloud는 별도로 장애물 marking과 ray clearing에 사용합니다. 따라서 SLAM map과 PointCloud2 중 하나만 선택하는 구조가 아니라, 누적 지도는 전역 경로 계획에, 현재 센서 관측은 동적 장애물과 clearing에 함께 사용됩니다.
+
+자율주행 제어 경로는 `Nav2 controller -> velocity smoother -> /nav2/cmd_vel -> nav2_command_user_bridge -> /control_command/user_odom`입니다. `/nav2/cmd_vel`은 autonomy 패키지 내부 토픽이며, 시뮬레이터는 이를 직접 구독하지 않습니다. 시뮬레이터와 실기 모두 `core/msg/CommandUser`의 twist를 동일하게 소비하고, 시뮬레이터에서는 이 값이 locomotion command term과 강화학습 policy observation에 함께 반영됩니다.
 
 ## 설치
 
@@ -282,7 +284,10 @@ export ROS_SETUP=/opt/ros/humble/setup.bash
 export ROS_WS_SETUP=/root/ros2_ws/install/setup.bash
 ```
 
-`run_play_ctrl_ros2.sh`는 `core/msg/CommandUser`, `core/msg/EventUser` 메시지 패키지가 없으면 `/root/ros2_ws/src/core`에 자동 생성하고 `colcon build`를 시도합니다.
+`core/msg/CommandUser`, `core/msg/EventUser`의 원본 스키마는
+`cocelo-hd-slam-yaw/interfaces/core`에 포함되어 있습니다.
+`run_play_ctrl_ros2.sh`는 Isaac의 Python ABI에 맞춰 이 패키지를
+`core_ws`에 자동 빌드하므로 별도 인터페이스 저장소가 필요하지 않습니다.
 
 ## 스크립트 구조
 

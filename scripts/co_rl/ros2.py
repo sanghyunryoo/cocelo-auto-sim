@@ -867,7 +867,7 @@ class Ros2CameraPublisher:
 
 
 class Ros2CommandUserBridge:
-    """Publish and subscribe core/msg/CommandUser velocity commands."""
+    """Publish keyboard and subscribe actuator-facing core/msg/CommandUser commands."""
 
     def __init__(
         self,
@@ -877,13 +877,12 @@ class Ros2CommandUserBridge:
         node_name: str = "isaac_command_user_bridge",
         odom_frame_id: str = "odom",
         child_frame_id: str = DEFAULT_BASE_FRAME_ID,
-        cmd_vel_topic: str = "/nav2/cmd_vel",
+        publish_enabled: bool = False,
     ):
         import math
         import numpy as np
         import rclpy
         from builtin_interfaces.msg import Time
-        from geometry_msgs.msg import Twist
         from rclpy.qos import QoSDurabilityPolicy, QoSHistoryPolicy, QoSProfile, QoSReliabilityPolicy
         CommandUser = _import_ros2_command_user_type()
 
@@ -915,13 +914,10 @@ class Ros2CommandUserBridge:
             durability=QoSDurabilityPolicy.VOLATILE,
         )
         self._node = rclpy.create_node(node_name)
-        self._publisher = self._node.create_publisher(CommandUser, topic_name, qos)
+        self._publisher = (
+            self._node.create_publisher(CommandUser, topic_name, qos) if publish_enabled else None
+        )
         self._subscription = self._node.create_subscription(CommandUser, topic_name, self._on_command_user, qos)
-        self._cmd_vel_subscription = None
-        if cmd_vel_topic:
-            self._cmd_vel_subscription = self._node.create_subscription(
-                Twist, cmd_vel_topic, self._on_cmd_vel, qos
-            )
 
     @property
     def received_count(self) -> int:
@@ -932,6 +928,9 @@ class Ros2CommandUserBridge:
         return self._topic_name
 
     def publish(self, command, timestamp_s: float, dt: float = 0.0) -> None:
+        if self._publisher is None:
+            raise RuntimeError("CommandUser publishing is disabled for this bridge")
+
         command_np = self._to_command_np(command)
         lin_x, lin_y, ang_z, pos_z = self._command_to_motion(command_np)
 
@@ -998,29 +997,6 @@ class Ros2CommandUserBridge:
             "z": float(msg.odom.pose.pose.position.z),
             "height": float(msg.odom.pose.pose.position.z),
             "base_height": float(msg.odom.pose.pose.position.z),
-        }
-        for i in range(self._command_dim):
-            axis_name = self._axis_names[i].lower() if i < len(self._axis_names) else ""
-            command[i] = values.get(axis_name, 0.0)
-        self._latest_command = command
-        self._received_count += 1
-
-    def _on_cmd_vel(self, msg) -> None:
-        command = self._np.zeros(self._command_dim, dtype=self._np.float32)
-        values = {
-            "lin_vel_x": float(msg.linear.x),
-            "x": float(msg.linear.x),
-            "vx": float(msg.linear.x),
-            "vel_x": float(msg.linear.x),
-            "lin_vel_y": float(msg.linear.y),
-            "y": float(msg.linear.y),
-            "vy": float(msg.linear.y),
-            "vel_y": float(msg.linear.y),
-            "ang_vel_z": float(msg.angular.z),
-            "yaw": float(msg.angular.z),
-            "wz": float(msg.angular.z),
-            "omega_z": float(msg.angular.z),
-            "yaw_rate": float(msg.angular.z),
         }
         for i in range(self._command_dim):
             axis_name = self._axis_names[i].lower() if i < len(self._axis_names) else ""
@@ -1492,7 +1468,7 @@ def create_command_user_bridge(
     axis_names: list[str] | None = None,
     odom_frame_id: str = "odom",
     child_frame_id: str = DEFAULT_BASE_FRAME_ID,
-    cmd_vel_topic: str = "/nav2/cmd_vel",
+    publish_enabled: bool = False,
 ) -> Ros2CommandUserBridge:
     """Create a ROS 2 CommandUser publisher/subscriber bridge."""
 
@@ -1502,7 +1478,7 @@ def create_command_user_bridge(
         axis_names=axis_names,
         odom_frame_id=odom_frame_id,
         child_frame_id=child_frame_id,
-        cmd_vel_topic=cmd_vel_topic,
+        publish_enabled=publish_enabled,
     )
 
 

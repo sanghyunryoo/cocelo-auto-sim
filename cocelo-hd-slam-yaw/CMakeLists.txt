@@ -6,6 +6,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(ament_cmake REQUIRED)
+find_package(core REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(nav_msgs REQUIRED)
 find_package(rclcpp REQUIRED)
@@ -50,7 +51,16 @@ ament_target_dependencies(live_occupancy_mapper
   tf2_ros
 )
 
-install(TARGETS front_wall_angle_estimator live_occupancy_mapper
+add_executable(nav2_command_user_bridge
+  src/nav2_command_user_bridge.cpp
+)
+ament_target_dependencies(nav2_command_user_bridge
+  core
+  geometry_msgs
+  rclcpp
+)
+
+install(TARGETS front_wall_angle_estimator live_occupancy_mapper nav2_command_user_bridge
   RUNTIME DESTINATION lib/${PROJECT_NAME}
 )
 

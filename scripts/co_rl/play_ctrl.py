@@ -435,13 +435,6 @@ parser.add_argument(
     default=10.0,
     help="Publish local keyboard CommandUser messages at this rate in Hz.",
 )
-parser.add_argument(
-    "--ros2_nav_cmd_vel_topic",
-    type=str,
-    default="/nav2/cmd_vel",
-    help="geometry_msgs/Twist topic used by Nav2 to command the simulated robot.",
-)
-
 # append CO-RL cli arguments
 cli_args.add_co_rl_args(parser)
 # append AppLauncher cli args
@@ -1876,12 +1869,14 @@ def main():
             command_dim=teleop_spec.command_dim,
             axis_names=teleop_spec.axis_names,
             child_frame_id=args_cli.ros2_base_frame_id,
-            cmd_vel_topic=args_cli.ros2_nav_cmd_vel_topic,
+            publish_enabled=bool(
+                args_cli.teleop and args_cli.ros2_command_user_publish_keyboard
+            ),
         )
         print(
-            "[INFO] Bridging ROS 2 CommandUser "
-            f"('{args_cli.ros2_command_user_topic}') and Nav2 Twist "
-            f"('{args_cli.ros2_nav_cmd_vel_topic}') to command term '{teleop_spec.command_term_name}'"
+            "[INFO] Applying ROS 2 CommandUser "
+            f"('{args_cli.ros2_command_user_topic}') to command term "
+            f"'{teleop_spec.command_term_name}' and the policy observation"
         )
         if args_cli.teleop and args_cli.ros2_command_user_publish_keyboard:
             print("[INFO] Keyboard teleop commands are published as core/msg/CommandUser before applying to sim.")
