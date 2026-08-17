@@ -23,6 +23,12 @@ Flamingo ROS 2 Auto-Sim은 Isaac Lab 기반 Flamingo 로봇 시뮬레이션을 �
 
 ![Isaac Sim and RViz2 example](resource/example.png)
 
+### SLAM + Nav2 자율주행
+
+왼쪽 RViz2 화면은 주행하면서 확장되는 동적 점유격자 지도와 Nav2 global/local costmap의 장애물 및 inflation 영역을 보여줍니다. 오른쪽 Isaac Sim 화면은 같은 시점의 병원 환경과 로봇 위치입니다. 사용자는 RViz2의 `Nav2 Goal` 도구나 `/navigate_to_pose` action으로 목적지를 지정할 수 있으며, 최종 주행 명령은 `core/msg/CommandUser`로 변환되어 시뮬레이터와 실기 제어기에 동일하게 전달됩니다.
+
+![SLAM and Nav2 autonomous navigation](resource/nav2_image.png)
+
 ## 빠른 실행
 
 ```bash
@@ -302,6 +308,7 @@ export ROS_WS_SETUP=/root/ros2_ws/install/setup.bash
 | `weights/example_policy.onnx` | 기본 예제 정책 |
 | `resource/gui.png` | README용 GUI 스크린샷 |
 | `resource/example.png` | README용 Isaac/RViz2 실행 예시 |
+| `resource/nav2_image.png` | SLAM 동적 지도, Nav2 costmap과 Isaac Sim 자율주행 예시 |
 
 ## CLI 실행 예시
 
