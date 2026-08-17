@@ -1,13 +1,15 @@
 # Flamingo ROS 2 Auto-Sim
 
-[![IsaacSim](https://img.shields.io/badge/IsaacSim-4.5-silver.svg)](https://docs.omniverse.nvidia.com/isaacsim/latest/overview.html)
-[![IsaacLab](https://img.shields.io/badge/IsaacLab-2.0.0-silver)](https://isaac-sim.github.io/IsaacLab/)
+[![IsaacSim](https://img.shields.io/badge/IsaacSim-5.1.0-silver.svg)](https://docs.omniverse.nvidia.com/isaacsim/latest/overview.html)
+[![IsaacLab](https://img.shields.io/badge/IsaacLab-2.3.2-silver)](https://isaac-sim.github.io/IsaacLab/)
 [![Python](https://img.shields.io/badge/python-3.10-blue.svg)](https://docs.python.org/3/whatsnew/3.10.html)
 [![ROS 2](https://img.shields.io/badge/ROS%202-Humble-blue)](https://docs.ros.org/en/humble/)
 [![Linux](https://img.shields.io/badge/platform-linux--64-orange.svg)](https://releases.ubuntu.com/)
 [![License](https://img.shields.io/badge/license-MIT-yellow.svg)](https://opensource.org/license/mit)
 
 Flamingo ROS 2 Auto-Sim은 Isaac Lab 기반 Flamingo 로봇 시뮬레이션을 실행하고, RViz2로 ROS 2 센서/TF 데이터를 확인하며, ONNX 정책과 키보드 명령으로 로봇을 제어하기 위한 통합 실행 환경입니다.
+
+현재 개발 및 실행 검증 기준 버전은 **Isaac Sim 5.1.0**, **Isaac Lab 2.3.2**입니다.
 
 ## 한눈에 보기
 
@@ -51,98 +53,6 @@ GUI 없이 바로 실행하려면 다음 스크립트를 사용할 수 있습니
 | RViz2 | ROS 2 토픽과 로봇 상태 시각화 |
 | Super-LIO / Nav2 | `map -> odom` 위치 추정, 동적 점유격자 지도와 자율주행 |
 | ONNX policy runtime | `weights/example_policy.onnx` 기반 정책 추론 |
-
-## Docker로 실행
-
-Docker 이미지에는 Flamingo ROS 2 Auto-Sim 실행 환경과 소스 코드가 포함되어 있습니다.
-
-### 1. Docker 이미지 다운로드
-
-```bash
-docker pull jaykor97/cocelo-nav:compact
-```
-
-### 2. GUI 디스플레이 권한 설정
-
-Docker 컨테이너에서 Control Center, Isaac Sim, RViz2 GUI를 호스트 화면에 표시하려면 컨테이너가 호스트의 X11 디스플레이에 접근할 수 있도록 설정해야 합니다.
-
-컨테이너 실행 전에 호스트 터미널에서 다음 명령을 실행합니다.
-
-```bash
-xhost +local:root
-```
-
-현재 디스플레이 환경 변수도 확인합니다.
-
-```bash
-echo "$DISPLAY"
-```
-
-일반적으로 `:0` 또는 `:1`과 같은 값이 출력되어야 합니다.
-
-### 3. Docker 컨테이너 실행
-
-```bash
-docker run --rm -it \
-  --name cocelo-nav \
-  --gpus all \
-  --runtime=nvidia \
-  --privileged \
-  --network host \
-  --ipc host \
-  -e ACCEPT_EULA=Y \
-  -e PRIVACY_CONSENT=Y \
-  -e DISPLAY="$DISPLAY" \
-  -e QT_X11_NO_MITSHM=1 \
-  -e NVIDIA_DRIVER_CAPABILITIES=all \
-  -v /tmp/.X11-unix:/tmp/.X11-unix:rw \
-  jaykor97/cocelo-nav:compact
-```
-
-컨테이너에 들어간 후 다음 명령을 실행합니다.
-
-```bash
-cd ~/auto-sim
-./launch.sh
-```
-
-GUI 없이 실행하려면 다음 명령을 사용할 수 있습니다.
-
-```bash
-cd ~/auto-sim
-./run_play_ctrl_ros2.sh --headless
-```
-
-### Docker GUI 실행 주의사항
-
-`./launch.sh` 실행 후 GUI가 나타나지 않거나 다음과 같은 오류가 발생하면 X11 디스플레이 설정을 확인합니다.
-
-```text
-Authorization required
-cannot open display
-could not connect to display
-```
-
-Docker 실행 명령에는 반드시 다음 설정이 포함되어야 합니다.
-
-```bash
--e DISPLAY="$DISPLAY"
--v /tmp/.X11-unix:/tmp/.X11-unix:rw
-```
-
-디스플레이 권한 오류가 발생하면 호스트에서 다음 명령을 다시 실행합니다.
-
-```bash
-xhost +local:root
-```
-
-Docker 사용이 끝난 후에는 다음 명령으로 허용한 권한을 제거할 수 있습니다.
-
-```bash
-xhost -local:root
-```
-
-> SSH 세션이나 모니터가 연결되지 않은 서버에서 Docker를 실행하는 경우에는 일반적인 X11 설정만으로 GUI가 표시되지 않을 수 있습니다. 이 경우 X11 forwarding, VNC 또는 원격 데스크톱 환경을 별도로 구성하거나 `--headless` 모드로 실행해야 합니다.
 
 ## GUI 사용법
 
@@ -247,7 +157,7 @@ GUI에서 실행하면 전역 키보드 입력을 사용해 로봇을 조종합�
 
 ## 설치
 
-이 저장소는 Ubuntu + Isaac Sim 4.5 + Isaac Lab 2.3.0 + ROS 2 Humble 환경을 기준으로 구성되어 있습니다.
+이 저장소는 Ubuntu + Isaac Sim 5.1.0 + Isaac Lab 2.3.2 환경에서 개발 및 실행 검증되었습니다.
 
 ### 1. Isaac Sim 설치
 
